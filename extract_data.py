@@ -243,7 +243,70 @@ def save_file(prefix):
     right.to_csv(right_file)
     left.to_csv(left_file)
 
+    dest = [dest1, dest2, dest3, dest4, dest5, dest6]
+    di = [direct, right, left]
+
     print("data file have saved with prefix ", prefix)
+
+
+def load_file(prefix):
+
+    global flow_in, flow_out, left_in, left_out, right_in, right_out
+    global dest1, dest2, dest3, dest4, dest5, dest6, right, left, direct, dest, di
+
+    flow_in_file = os.path.join(data_fold, prefix + "_flow_in.csv")
+    flow_out_file = os.path.join(data_fold, prefix + "_flow_out.csv")
+    left_in_file = os.path.join(data_fold, prefix + "_left_in.csv")
+    left_out_file = os.path.join(data_fold, prefix + "_left_out.csv")
+    right_in_file = os.path.join(data_fold, prefix + "_right_in.csv")
+    right_out_file = os.path.join(data_fold, prefix + "_right_out.csv")
+    dest1_file = os.path.join(data_fold, prefix+"_dest1.csv")
+    dest2_file = os.path.join(data_fold, prefix+"_dest2.csv")
+    dest3_file = os.path.join(data_fold, prefix+"_dest3.csv")
+    dest4_file = os.path.join(data_fold, prefix+"_dest4.csv")
+    dest5_file = os.path.join(data_fold, prefix+"_dest5.csv")
+    dest6_file = os.path.join(data_fold, prefix+"_dest6.csv")
+    direct_file = os.path.join(data_fold, prefix+"_direct.csv")
+    right_file = os.path.join(data_fold, prefix+"_right.csv")
+    left_file = os.path.join(data_fold, prefix+"_left.csv")
+
+    flow_in = pd.read_csv(flow_in_file, index_col=0)
+    flow_out = pd.read_csv(flow_out_file, index_col=0)
+    left_out = pd.read_csv(left_out_file, index_col=0)
+    right_out = pd.read_csv(right_out_file, index_col=0)
+    left_in = pd.read_csv(left_in_file, index_col=0)
+    right_in = pd.read_csv(right_in_file, index_col=0)
+    dest1 = pd.read_csv(dest1_file, index_col=0)
+    dest2 = pd.read_csv(dest2_file, index_col=0)
+    dest3 = pd.read_csv(dest3_file, index_col=0)
+    dest4 = pd.read_csv(dest4_file, index_col=0)
+    dest5 = pd.read_csv(dest5_file, index_col=0)
+    dest6 = pd.read_csv(dest6_file, index_col=0)
+    direct = pd.read_csv(direct_file, index_col=0)
+    right = pd.read_csv(right_file, index_col=0)
+    left = pd.read_csv(left_file, index_col=0)
+
+    dest = [dest1, dest2, dest3, dest4, dest5, dest6]
+    di = [direct, right, left]
+
+def load_IO(prefix):
+
+    global flow_in, flow_out, left_in, left_out, right_in, right_out
+
+    flow_in_file = os.path.join(data_fold, prefix + "_flow_in.csv")
+    flow_out_file = os.path.join(data_fold, prefix + "_flow_out.csv")
+    left_in_file = os.path.join(data_fold, prefix + "_left_in.csv")
+    left_out_file = os.path.join(data_fold, prefix + "_left_out.csv")
+    right_in_file = os.path.join(data_fold, prefix + "_right_in.csv")
+    right_out_file = os.path.join(data_fold, prefix + "_right_out.csv")
+
+    flow_in = pd.read_csv(flow_in_file, index_col=0)
+    flow_out = pd.read_csv(flow_out_file, index_col=0)
+    left_out = pd.read_csv(left_out_file, index_col=0)
+    right_out = pd.read_csv(right_out_file, index_col=0)
+    left_in = pd.read_csv(left_in_file, index_col=0)
+    right_in = pd.read_csv(right_in_file, index_col=0)
+
 
 def fcd_resolve(fcd_file, net_information, prefix="defualt"):
 
@@ -343,7 +406,48 @@ def fcd_resolve(fcd_file, net_information, prefix="defualt"):
     save_file(prefix)
     
                 
-def reset_data(prefix, )
+def reset_data(prefix, deltaT = 5, sim_step=0.1):
 
-net_information = net_resovle(net_file)
-fcd_resolve(fcd_file, net_information)
+    global flow_in, flow_out, left_in, left_out, right_in, right_out
+
+    load_file(prefix)
+
+    max_time = len(flow_in.index)
+    max_time -= int(deltaT / sim_step)
+
+    reset_flow_in = pd.DataFrame(columns=flow_in.columns, index=flow_in.index).fillna(0)
+    reset_flow_out = pd.DataFrame(columns=flow_in.columns, index=flow_in.index).fillna(0)
+    reset_right_in = pd.DataFrame(columns=flow_in.columns, index=flow_in.index).fillna(0)
+    reset_right_out = pd.DataFrame(columns=flow_in.columns, index=flow_in.index).fillna(0)
+    reset_left_in = pd.DataFrame(columns=flow_in.columns, index=flow_in.index).fillna(0)
+    reset_left_out = pd.DataFrame(columns=flow_in.columns, index=flow_in.index).fillna(0)
+
+    t = 0
+    for i in range(int(deltaT / sim_step)):
+
+        reset_flow_in.loc[0] += flow_in.loc[t]
+        reset_flow_out.loc[0] += flow_out.loc[t]
+        reset_left_in.loc[0] += left_in.loc[t]
+        reset_right_in.loc[0] += right_in.loc[t]
+        reset_left_out.loc[0] += left_out.loc[t]
+        reset_right_out.loc[0] += right_out.loc[t]
+
+        t = round(t+sim_step, 1)
+
+    for i in range(1, max_time+1):
+
+        t = round(i*sim_step, 1)
+        minus_time = round(t-sim_step, 1)
+        plus_time = round(t+deltaT-sim_step, 1)
+        reset_flow_in.loc[t] = reset_flow_in.loc[minus_time] - flow_in.loc[minus_time] + flow_in.loc[plus_time]
+        reset_flow_out.loc[t] = reset_flow_out.loc[minus_time] - flow_out.loc[minus_time] + flow_out.loc[plus_time]
+        reset_left_in.loc[t] = reset_left_in.loc[minus_time] - left_in.loc[minus_time] + left_in.loc[plus_time]
+        reset_left_out.loc[t] = reset_left_out.loc[minus_time] - left_out.loc[minus_time] + left_out.loc[plus_time]
+        reset_right_in.loc[t] = reset_right_in.loc[minus_time] - right_in.loc[minus_time] + right_in.loc[plus_time]
+        reset_right_out.loc[t] = reset_right_out.loc[minus_time] - right_out.loc[minus_time] + right_out.loc[plus_time]
+
+    save_file(prefix+"_reset")
+
+#net_information = net_resovle(net_file)
+#fcd_resolve(fcd_file, net_information)
+reset_data("defualt")
