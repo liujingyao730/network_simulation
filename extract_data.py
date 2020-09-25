@@ -80,14 +80,19 @@ def net_resovle(file, pickle_file):
                 junction_id = child.attrib["id"]
                 junction[junction_id] = child.attrib["intLanes"].split(" ")
         elif child.tag == "connection":
-            if "tl" in child.attrib.keys():
-                connection_tlc = child.attrib["tl"]
+            if "via" in child.attrib.keys():
                 connection_id = child.attrib["via"]
                 connection_from = child.attrib["from"]
                 connection_to = child.attrib["to"]
                 connection_type = child.attrib["dir"]
+                via_edge = "_".join(connection_id.split('_')[:-1])
+                inter_list[via_edge]["from_edge"] = connection_from
+                if "tl" in child.attrib.keys():
+                    connection_tlc = child.attrib["tl"]
+                else:
+                    from_lane = connection_from + "_" + child.attrib["fromLane"]
+                    connection_tlc = junction_connection[from_lane]["tlc"]
                 junction_connection[connection_id] = {"from":connection_from, "to":connection_to, "type":connection_type, "tlc":connection_tlc}
-
     inter_cell = inter_list
     ordinary_cell = {}
     connection = {}
@@ -132,9 +137,11 @@ def net_resovle(file, pickle_file):
                     direction = junction_connection[inter_lane]["type"]
                     via_edge = "_"
                     via_edge = via_edge.join(inter_lane.split("_")[:-1])
-                    inter_cell[via_edge]["from_edge"] = from_edge
                     to_cell = to_edge + '-0'
-                    from_cell = ordinary_cell[from_edge]["cell_id"][-1]
+                    if from_edge in ordinary_cell.keys():
+                        from_cell = ordinary_cell[from_edge]["cell_id"][-1]
+                    else:
+                        from_cell = from_edge
                     if from_cell not in signal_connection.keys():
                         signal_connection[from_cell] = {}
 
@@ -145,13 +152,15 @@ def net_resovle(file, pickle_file):
                     if phase[index] in ["y", "Y"]:
                         signal_connection[from_cell][to_cell][1] = end
                     else:   
-                        signal_connection[from_cell][to_cell] = [start, end, direction]
+                        signal_connection[from_cell][to_cell] = [start, end, direction, tlc]
             start = (start + time) % cycle
 
-    with open(pickle_file, 'wb') as f:
-        pickle.dump(net_information, pickle_file)
+    net_information = {"ordinary_cell":ordinary_cell, "inter_cell":inter_cell, "connection":connection, "signal_connection":signal_connection}
 
-    return {"ordinary_cell":ordinary_cell, "inter_cell":inter_cell, "connection":connection, "signal_connection":signal_connection}
+    with open(pickle_file, 'wb') as f:
+        pickle.dump(net_information, f)
+
+    return net_information
 
 
 def init_dataframe(ordinary_cell, inter_cell):
@@ -367,6 +376,8 @@ def fcd_resolve(fcd_file, net_information, prefix="defualt"):
             nowstep.clear()
 
             time = float(elem.attrib["time"])
+            if time % 10 == 0:
+                print(time)
             add_time(time)
         elif elem.tag == "vehicle":
             vehicle_id = elem.attrib["id"]
@@ -386,7 +397,8 @@ def fcd_resolve(fcd_file, net_information, prefix="defualt"):
                     start_pos += cell_length
             elif edge in inter_cell.keys():
                 cell_id = edge
-                edge = inter_cell[edge]["from_edge"]
+                while edge in inter_cell.keys():
+                    edge = inter_cell[edge]["from_edge"]
 
             dest_edge = utils.routes[route_index][-1]
             destination = end_list.index(dest_edge)
@@ -448,6 +460,6 @@ def reset_data(prefix, deltaT = 5, sim_step=0.1):
 
     save_file(prefix+"_reset")
 
-#net_information = net_resovle(net_file)
-#fcd_resolve(fcd_file, net_information)
-reset_data("defualt")
+net_information = net_resovle(net_file, "intersection.pkl")
+fcd_resolve(fcd_file, net_information)
+#reset_data("defualt")
