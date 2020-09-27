@@ -86,6 +86,7 @@ def net_resolve(file, pickle_file):
     ordinary_cell = {}
     connection = {}
     signal_connection = {}
+    tlc_cycle = []
     pass_char = ['y', 'Y', 'g', 'G']
 
     for edge in edge_list.keys():
@@ -107,7 +108,6 @@ def net_resolve(file, pickle_file):
                 connection[former_cell] = cell_id
             former_cell = cell_id
     
-    signal_connection["cycle"] = []
     tlc_index = 0
 
     for tlc_id in tlc.keys():
@@ -116,7 +116,7 @@ def net_resolve(file, pickle_file):
         dura = [phase[0] for phase in tlc[tlc_id]["phases"]]
         phases = [phase[1] for phase in tlc[tlc_id]["phases"]]
         cycle = sum(dura)
-        signal_connection["cycle"].append(cycle)
+        tlc_cycle.append(cycle)
         start = offset % cycle
         for i in range(len(dura)):
             phase = phases[i]
@@ -156,7 +156,8 @@ def net_resolve(file, pickle_file):
         "ordinary_cell": ordinary_cell, 
         "junction_cell": junction_cell,
         "connection": connection,
-        "signal_connection": signal_connection
+        "signal_connection": signal_connection,
+        "cycle": tlc_cycle
     }
 
     with open(pickle_file, 'wb') as f:
