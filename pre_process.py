@@ -86,7 +86,7 @@ def net_resolve(file, pickle_file):
     ordinary_cell = {}
     connection = {}
     signal_connection = {}
-    tlc_cycle = []
+    tlc_time = []
     pass_char = ['y', 'Y', 'g', 'G']
 
     for edge in edge_list.keys():
@@ -107,8 +107,6 @@ def net_resolve(file, pickle_file):
             if former_cell is not None:
                 connection[former_cell] = cell_id
             former_cell = cell_id
-    
-    tlc_index = 0
 
     for tlc_id in tlc.keys():
         
@@ -116,8 +114,8 @@ def net_resolve(file, pickle_file):
         dura = [phase[0] for phase in tlc[tlc_id]["phases"]]
         phases = [phase[1] for phase in tlc[tlc_id]["phases"]]
         cycle = sum(dura)
-        tlc_cycle.append(cycle)
-        start = offset % cycle
+        tlc_time.append([cycle, offset])
+        start = 0
         for i in range(len(dura)):
             phase = phases[i]
             time = dura[i]
@@ -139,14 +137,13 @@ def net_resolve(file, pickle_file):
                         signal_connection[from_cell] = {}
                     
                     if to_cell not in signal_connection[from_cell].keys():
-                        signal_connection[from_cell][to_cell] = [start, end, tlc_index]
+                        signal_connection[from_cell][to_cell] = [start, end, tlc_id]
                     else:
-                        if start < signal_connection[from_cell][to_cell][0]:
-                            signal_connection[from_cell][to_cell][0] = start
-                        elif end > signal_connection[from_cell][to_cell][1]:
+                        if start == signal_connection[from_cell][to_cell][1]:
                             signal_connection[from_cell][to_cell][1] = end
+                        if end == signal_connection[from_cell][to_cell][0]:
+                            signal_connection[from_cell][to_cell][0] = start
             start = (start + time) % cycle
-        tlc_index += 1
     
 
     for junction_lane in junction_connection:
@@ -157,7 +154,7 @@ def net_resolve(file, pickle_file):
         "junction_cell": junction_cell,
         "connection": connection,
         "signal_connection": signal_connection,
-        "cycle": tlc_cycle
+        "tlc_time": tlc_time
     }
 
     with open(pickle_file, 'wb') as f:
