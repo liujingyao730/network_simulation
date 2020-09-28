@@ -55,31 +55,31 @@ class network(object):
 
         self.generate_adj(0)
 
-        a = 0
+        
 
     def generate_basic_adj(self):
 
-        self.basic_adj_row = [self.cell_index[from_cell] for from_cell in self.connection.keys()]
-        self.basic_adj_col = [self.cell_index[self.connection[from_cell]] for from_cell in self.connection.keys()]
-        self.basic_adj_row.extend(list(range(self.cell_num)))
-        self.basic_adj_col.extend(list(range(self.cell_num)))
+        self.rows = [self.cell_index[cell] for cell in self.connection.keys()]
+        self.cols = [self.cell_index[self.connection[cell]] for cell in self.connection.keys()]
+        self.vals = [1 for cell in self.connection.keys()]
+        for i in range(self.cell_num):
+            self.rows.append(i)
+            self.cols.append(i)
+            self.vals.append(1)
 
-        self.basic_adj = SparseTensor(
-                                row=torch.tensor(self.basic_adj_row),
-                                col=torch.tensor(self.basic_adj_col),
-                                sparse_sizes=(self.cell_num, self.cell_num)
-                            )
+        self.basic_adj = sparse.csc_matrix((self.vals, (self.rows, self.cols)), shape=(self.cell_num, self.cell_num))
 
         for from_cell in self.signal_connection.keys():
             for to_cell in self.signal_connection[from_cell].keys():
                 inter_cell = self.signal_connection[from_cell][to_cell][2]
-                self.basic_adj_row.append(self.cell_index[from_cell])
-                self.basic_adj_col.append(self.tlc_index[inter_cell])
-                self.basic_adj_row.append(self.tlc_index[inter_cell])
-                self.basic_adj_col.append(self.cell_index[to_cell])
+                from_id = self.cell_index[from_cell]
+                to_id = self.cell_index[to_cell]
+                inter_id = self.cell_index[inter_cell]
+                self.rows.extend([from_id, inter_id])
+                self.cols.extend([inter_id, to_id])
+                self.vals.extend([1, 1])
         
-        self.basic_adj_col = torch.tensor(self.basic_adj_col)
-        self.basic_adj_row = torch.tensor(self.basic_adj_row)
+        self.all_adj = sparse.csc_matrix((self.vals, (self.rows, self.cols)), shape=(self.cell_num, self.cell_num))
 
     def generate_intervals(self):
 
@@ -88,24 +88,22 @@ class network(object):
 
         for from_cell in self.signal_connection.keys():
             for to_cell in self.signal_connection[from_cell].keys():
-                tlc_index = self.tlc_index[self.signal_connection[from_cell][to_cell][2]]
+                inter_id = self.tlc_index[self.signal_connection[from_cell][to_cell][2]]
+                start_id = self.cell_index[from_cell]
+                to_id = self.cell_index[to_cell]
                 start = self.signal_connection[from_cell][to_cell][0]
                 end = self.signal_connection[from_cell][to_cell][1]
-                self.intervals[tlc_index].append(Interval(start, end))
-                self.local_adj[tlc_index].append(
-                    SparseTensor(
-                        row=torch.tensor([self.cell_index[from_cell], tlc_index]),
-                        col=torch.tensor([tlc_index, self.cell_index[to_cell]]),  
-                        sparse_sizes=(self.cell_num, self.cell_num)
-                    )
+                self.intervals[inter_id].append(Interval(start, end))
+                self.local_adj[inter_id].append(
+                    sparse.csc_matrix(([1, 1], ([start_id, inter_id], [inter_id, to_id])), shape=(self.cell_num, self.cell_num))
                 )
     
     def generate_network_feature(self):
 
-        row = self.basic_adj_row.numpy()
-        col = self.basic_adj_col.numpy()
+        row = self.rows
+        col = self.cols
 
-        edges = [(row[i], col[i]) for i in range((row.shape[0]))]
+        edges = [(row[i], col[i]) for i in range(len(row))]
 
         G = nx.DiGraph()
         N = nx.path_graph(self.cell_num)
@@ -127,7 +125,7 @@ class network(object):
         nx.draw(G,pos,with_labels=True, node_color='white', edge_color='red', node_size=400, alpha=0.5 )
         pylab.title('topology',fontsize=15)
         pylab.show()
-        '''     
+        '''
 
     def generate_adj(self, time):
 
@@ -141,8 +139,8 @@ class network(object):
                 if t in self.intervals[i][j]:
                     self.adj += self.local_adj[i][j]
 
+        self.adj = sparse.coo_matrix(self.adj)
 
-    
 
 with open("test_net.pkl", 'rb') as f:
     net_information = pickle.load(f)
