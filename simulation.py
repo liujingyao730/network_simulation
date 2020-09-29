@@ -23,6 +23,7 @@ from torch_scatter import scatter_add
 from torch_sparse import SparseTensor, matmul, fill_diag, sum, mul
 
 import utils
+from network_data import network_dataset
 
 class network(object):
 
@@ -54,8 +55,6 @@ class network(object):
         self.generate_network_feature()
 
         self.generate_adj(0)
-
-        
 
     def generate_basic_adj(self):
 
@@ -140,8 +139,9 @@ class network(object):
                     self.adj += self.local_adj[i][j]
 
         self.adj = sparse.coo_matrix(self.adj)
+        self.adj = SparseTensor(row=torch.LongTensor(self.adj.row), col=torch.LongTensor(self.adj.col))
 
-
+    
 with open("test_net.pkl", 'rb') as f:
     net_information = pickle.load(f)
 destiantion = [end+'-2' for end in utils.end_edge.keys()]
