@@ -18,6 +18,7 @@ class network_dataset(Dataset):
         self.init_length = args["init_length"]
         self.prefix = args["prefix"]
         self.data_fold = args["data_fold"]
+        self.cell_list = cell_list
 
         self.load_data()
         #self.normalize()
@@ -31,12 +32,12 @@ class network_dataset(Dataset):
         self.dest5_file = os.path.join(self.data_fold, self.prefix+"_dest5.csv")
         self.dest6_file = os.path.join(self.data_fold, self.prefix+"_dest6.csv")
 
-        self.dest1 = pd.read_csv(self.dest1_file, index_col=0)[cell_list].values[:, :, np.newaxis]
-        self.dest2 = pd.read_csv(self.dest2_file, index_col=0)[cell_list].values[:, :, np.newaxis]
-        self.dest3 = pd.read_csv(self.dest3_file, index_col=0)[cell_list].values[:, :, np.newaxis]
-        self.dest4 = pd.read_csv(self.dest4_file, index_col=0)[cell_list].values[:, :, np.newaxis]
-        self.dest5 = pd.read_csv(self.dest5_file, index_col=0)[cell_list].values[:, :, np.newaxis]
-        self.dest6 = pd.read_csv(self.dest6_file, index_col=0)[cell_list].values[:, :, np.newaxis]
+        self.dest1 = pd.read_csv(self.dest1_file, index_col=0)[self.cell_list].values[:, :, np.newaxis]
+        self.dest2 = pd.read_csv(self.dest2_file, index_col=0)[self.cell_list].values[:, :, np.newaxis]
+        self.dest3 = pd.read_csv(self.dest3_file, index_col=0)[self.cell_list].values[:, :, np.newaxis]
+        self.dest4 = pd.read_csv(self.dest4_file, index_col=0)[self.cell_list].values[:, :, np.newaxis]
+        self.dest5 = pd.read_csv(self.dest5_file, index_col=0)[self.cell_list].values[:, :, np.newaxis]
+        self.dest6 = pd.read_csv(self.dest6_file, index_col=0)[self.cell_list].values[:, :, np.newaxis]
 
         self.data = np.concatenate((self.dest1, self.dest2, self.dest3, self.dest4, self.dest5, self.dest6), axis=2)
         self.time_number = int(self.data.shape[0] - (self.temporal_length + 1) * self.delta_T / self.sim_step)
@@ -53,12 +54,10 @@ class network_dataset(Dataset):
 
     def __getitem__(self, index):
 
-        input_time = [int(i*self.delta_T/self.sim_step) + index for i in range(self.temporal_length)]
-        output_time = [int(i*self.delta_T/self.sim_step) + index for i in range(self.init_length, self.temporal_length+1)]
-        input_tensor = self.data[input_time]
-        output_tensor = self.data[output_time]
+        time_list = [int(i*self.delta_T/self.sim_step) + index for i in range(self.temporal_length+1)]
+        data_tensor = self.data[time_list]
 
-        return (input_tensor, output_tensor)
+        return data_tensor
 
     def __len__(self):
         

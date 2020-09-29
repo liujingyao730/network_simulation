@@ -21,9 +21,12 @@ from torch import Tensor
 from torch.nn import Parameter
 from torch_scatter import scatter_add
 from torch_sparse import SparseTensor, matmul, fill_diag, sum, mul
+from torch.autograd import Variable
+from torch.utils.data import Dataset, DataLoader
 
 import utils
 from network_data import network_dataset
+from model import test_model
 
 class network(object):
 
@@ -141,8 +144,49 @@ class network(object):
         self.adj = sparse.coo_matrix(self.adj)
         self.adj = SparseTensor(row=torch.LongTensor(self.adj.row), col=torch.LongTensor(self.adj.col))
 
+    def simulate(self, args, input_cells):
+
+        self.date_set = network_dataset(args, self.cell_list)
+        input_indexs = [self.cell_index[cell+'-0'] for cell in input_cells]
+
+        data = torch.Tensor(self.date_set[args["start"]]).unsqueeze(0)
+
+        output = self.simulator.infer(data, input_cells)
+
+        return output
+
+    def heat_map(self, output, cell_list):
+
+        index = [self.cell_index[cell] for cell in cell_list]
+
+        data = output[:, :, index, :].squeeze(0)
+        data = data.numpy().sum(axis=2)
+
+        sns.set()
+        ax = sns.heatmap(data.T, fmt="d",cmap='YlGnBu')
+        plt.show()
+
+    def train(self, args, input_cells):
+
+        
+
+
+if __name__ == "__main__":
     
-with open("test_net.pkl", 'rb') as f:
-    net_information = pickle.load(f)
-destiantion = [end+'-2' for end in utils.end_edge.keys()]
-a = network(net_information, None, destiantion)
+    with open("test_net.pkl", 'rb') as f:
+        net_information = pickle.load(f)
+    destiantion = [end+'-2' for end in utils.end_edge.keys()]
+    args = {}
+    args["sim_step"] = 0.1
+    args["delta_T"] = 5
+    args["temporal_length"] = 80
+    args["init_length"] = 4
+    args["prefix"] = "default"
+    args["data_fold"] = "data"
+    args["start"] = 0
+    start_cell = [cell for cell in utils.start_edge.keys()]
+    model = test_model(args)
+    a = network(net_information, model, destiantion)
+    output = a.simulate(args, start_cell)
+    show_cell = ["gneE0-0", "gneE0-1", "gneE0-2"]
+    a.heat_map(output, show_cell)
