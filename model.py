@@ -18,11 +18,12 @@ class test_model(nn.Module):
 
         super().__init__()
         self.init_length = args["init_length"]
+        self.output_size = args["dest_number"]
 
-    def forward(self, input_data):
-
-        return input_data[:, self.init_length:-1, :, :]
-
-    def infer(self, input_data, cell_list):
+    def forward(self, input_data, adj):
 
         return input_data[:, self.init_length:-1, :, :]
+
+    def infer(self, input_data, cell_list, adj):
+
+        return input_data[:, :, :self.output_size]

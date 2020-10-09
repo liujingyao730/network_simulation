@@ -9,8 +9,8 @@ start = 0
 end = 600
 interval = 100
 
-straight = 10
-turn = 20
+straight = 5
+turn = 15
 start_edge = {"gneE0":0, "-gneE3":0, "-gneE4":0, "-gneE5":1, "-gneE2":1, "-gneE6":1}
 end_edge = {"-gneE0":0, "gneE3":0, "gneE4":0, "gneE6":1, "gneE2":1, "gneE5":1}
 start_label = {"gneE0":0, "-gneE3":1, "-gneE4":2, "-gneE5":3, "-gneE2":4, "-gneE6":5}

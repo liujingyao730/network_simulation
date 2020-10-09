@@ -11,18 +11,21 @@ import xml.dom.minidom as dom
 import yaml
 import pickle
 import time
-
+import tqdm
 from interval import Interval, IntervalSet
 import networkx as nx
 import pylab
 
 import torch
+import torch.nn as nn
 from torch import Tensor
 from torch.nn import Parameter
 from torch_scatter import scatter_add
 from torch_sparse import SparseTensor, matmul, fill_diag, sum, mul
 from torch.autograd import Variable
 from torch.utils.data import Dataset, DataLoader
+from sklearn import metrics
+from torchnet import meter
 
 import utils
 from network_data import network_dataset
@@ -47,6 +50,7 @@ class network(object):
         for edge in self.ordinary_cell:
             self.cell_list.extend(self.ordinary_cell[edge]["cell_id"])
         self.cell_num = len(self.cell_list)
+        self.dest_num = len(self.destination)
         self.cell_index = {self.cell_list[i]:i for i in range(self.cell_num)}
         self.dest_index = {dest:self.cell_list.index(dest) for dest in self.destination}
         self.dest_order = {destiantion[i]:i for i in range(len(destiantion))}
@@ -95,7 +99,7 @@ class network(object):
                 to_id = self.cell_index[to_cell]
                 start = self.signal_connection[from_cell][to_cell][0]
                 end = self.signal_connection[from_cell][to_cell][1]
-                self.intervals[inter_id].append(Interval(start, end))
+                self.intervals[inter_id].append([start, end, start_id, inter_id])
                 self.local_adj[inter_id].append(
                     sparse.csc_matrix(([1, 1], ([start_id, inter_id], [inter_id, to_id])), shape=(self.cell_num, self.cell_num))
                 )
@@ -112,7 +116,7 @@ class network(object):
         G.add_nodes_from(N)
         G.add_edges_from(edges)
 
-        self.network_feature = torch.zeros(self.cell_num, len(self.dest_index)) - 1
+        self.network_feature = torch.zeros(self.cell_num, len(self.dest_index)+1) - 1
 
         for i in range(self.cell_num):
             for to_cell in self.dest_index.keys():
@@ -138,8 +142,10 @@ class network(object):
         for i in range(len(time_list)):
             t = time_list[i]
             for j in range(len(self.intervals[i])):
-                if t in self.intervals[i][j]:
+                if self.intervals[i][j][0] <= t <= self.intervals[i][j][1]:
                     self.adj += self.local_adj[i][j]
+                    self.network_feature[self.intervals[i][j][2]][self.dest_num] = self.intervals[i][j][1] - t
+                    self.network_feature[self.intervals[i][j][3]][self.dest_num] = self.intervals[i][j][1] - t
 
         self.adj = sparse.coo_matrix(self.adj)
         self.adj = SparseTensor(row=torch.LongTensor(self.adj.row), col=torch.LongTensor(self.adj.col))
@@ -149,18 +155,52 @@ class network(object):
         self.date_set = network_dataset(args, self.cell_list)
         input_indexs = [self.cell_index[cell+'-0'] for cell in input_cells]
 
-        data = torch.Tensor(self.date_set[args["start"]]).unsqueeze(0)
+        data = torch.Tensor(self.date_set[int(args["start"] / args["sim_step"])]).unsqueeze(0)
+        batch = data.shape[0]
+        time = data.shape[1]
+        cell = data.shape[2]
+        feature = self.network_feature.shape[1]
+        net_feature = torch.Tensor(self.network_feature).expand(batch, time, cell, feature)
 
-        output = self.simulator.infer(data, input_cells)
+        cell_number = data.shape[2]
+        dest_number = data.shape[3]
 
-        return output
+        assert cell_number == self.cell_num
+        assert dest_number == len(self.destination)
+
+        if args["use_cuda"]:
+            self.simulator = self.simulator.cuda()
+            data = data.cuda()
+            net_feature = net_feature.cuda()
+
+        data = torch.cat((data, net_feature), axis=3)
+
+        outputs = data.data.new(1, args["temporal_length"] - args["init_length"], cell_number, dest_number).fill_(0).float()
+
+        input_now = data[:, 0, :, :]
+
+        for t in range(data.shape[1]-1):
+
+            self.generate_adj(args["start"] + t*args["sim_step"])
+            if args["use_cuda"]:
+                self.adj = self.adj.cuda()
+            output = self.simulator.infer(input_now, input_cells, self.adj)
+            
+            if t >= args["init_length"]:
+                outputs[:, t-args["init_length"], :, :] += output
+                input_now = torch.cat((output[:, :, :], net_feature[:, t, :, :]), axis=2)
+                input_now[:, input_indexs, :] = data[:, t+1, input_indexs, :]
+            else:
+                input_now = data[:, t+1, :,:]
+
+        return outputs
 
     def heat_map(self, output, cell_list):
 
         index = [self.cell_index[cell] for cell in cell_list]
 
         data = output[:, :, index, :].squeeze(0)
-        data = data.numpy().sum(axis=2)
+        data = data.cpu().numpy().sum(axis=2)
 
         sns.set()
         ax = sns.heatmap(data.T, fmt="d",cmap='YlGnBu')
@@ -168,7 +208,57 @@ class network(object):
 
     def train(self, args, input_cells):
 
+        with open(os.path.join(args["fold"], args["config"]+'.yaml')) as config:
+            args = yaml.load(config)
         
+        criterion = nn.MSELoss()
+
+        if args["use_cuda"]:
+            self.simulator = self.simulator.cuda()
+            criterion = criterion.cuda()
+            self.network_feature = self.network_feature.cuda()
+
+        self.simulator.train()
+        optimizer = torch.optim.Adagrad(self.simulator.parameters(), weight_decay=args["lambda_param"])
+        acc_meter = meter.AverageValueMeter()
+        last_frame_meter = meter.AverageValueMeter()
+
+        best_acc_epoch = 0
+        best_acc = float('inf')
+
+        data_args = {}
+        data_args["sim_step"] = args["sim_step"]
+        data_args["delta_T"] = args["delta_T"]
+        data_args["temporal_length"] = args["temporal_length"]
+        data_args["data_fold"] = args["data_fold"]
+
+        for epoch in range(args["num_epochs"]):
+
+            print("***********************start training***************************")
+            acc_meter.reset()
+            start = time.time()
+
+            for prefix in args["prefix"]:
+                data_args["prefix"] = prefix
+                data_set = network_dataset(args, self.cell_list)
+                data_loader = DataLoader(data_set, batch_size=args["batch_size"])
+
+                for i, data in tqdm(enumerate(data_loader)):
+
+                    self.simulator.zero_grad()
+                    optimizer.zero_grad()
+
+                    data = Variable(data).float()
+
+                    if args["use_cuda"]:
+                        data = data.cuda()
+                    
+                    net_feauture = self.network_feature.expand(data.shape)
+                    data = torch.cat((data, net_feauture), axis = 3)
+
+
+                        
+
 
 
 if __name__ == "__main__":
@@ -180,10 +270,12 @@ if __name__ == "__main__":
     args["sim_step"] = 0.1
     args["delta_T"] = 5
     args["temporal_length"] = 80
-    args["init_length"] = 4
+    args["init_length"] = 40
     args["prefix"] = "default"
     args["data_fold"] = "data"
     args["start"] = 0
+    args["use_cuda"] = True
+    args["dest_number"] = 6
     start_cell = [cell for cell in utils.start_edge.keys()]
     model = test_model(args)
     a = network(net_information, model, destiantion)
