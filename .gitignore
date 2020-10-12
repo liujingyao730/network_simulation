@@ -6,3 +6,6 @@
 *.csv
 *.pkl
 *.rar
+*.json
+*.png
+*.npy
