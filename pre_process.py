@@ -107,7 +107,7 @@ def net_resolve(file, pickle_file):
             if former_cell is not None:
                 connection[former_cell] = cell_id
             former_cell = cell_id
-
+    tlc_index = 0
     for tlc_id in tlc.keys():
         
         offset = tlc[tlc_id]["offset"]
@@ -137,20 +137,21 @@ def net_resolve(file, pickle_file):
                         signal_connection[from_cell] = {}
                     
                     if to_cell not in signal_connection[from_cell].keys():
-                        signal_connection[from_cell][to_cell] = [start, end, tlc_id]
+                        signal_connection[from_cell][to_cell] = [start, end, tlc_index]
                     else:
                         if start == signal_connection[from_cell][to_cell][1]:
                             signal_connection[from_cell][to_cell][1] = end
                         if end == signal_connection[from_cell][to_cell][0]:
                             signal_connection[from_cell][to_cell][0] = start
             start = (start + time) % cycle
-    
 
+        tlc_index += 1
+    
     for junction_lane in junction_connection:
         junction_cell[junction_lane] = junction_connection[junction_lane]["tlc"]
 
     net_information = {
-        "ordinary_cell": ordinary_cell, 
+        "ordinary_cell": ordinary_cell,
         "junction_cell": junction_cell,
         "connection": connection,
         "signal_connection": signal_connection,
@@ -286,8 +287,6 @@ def fcd_resolve(fcd_file, net_information, prefix="default"):
         elem.clear()
 
     save_file(prefix)
-
-                
 
 net_information = net_resolve(net_file, "test_net.pkl")
 init_dataframe(net_information["ordinary_cell"], net_information["junction_cell"])

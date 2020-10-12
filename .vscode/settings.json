@@ -1,3 +1,7 @@
 {
-    "python.pythonPath": "D:\\Develop\\envs\\pytorch\\python.exe"
+    "python.pythonPath": "/home/liujingyao/anaconda3/envs/tensorflow/bin/python",
+    "python.linting.flake8Args": [
+        "--max-line-length=120",
+        "--ignore=E402,F841,F401,E302,E305,W293,E231,E226,W391,E501",
+    ],
 }
