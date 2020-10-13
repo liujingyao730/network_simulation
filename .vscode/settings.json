@@ -1,7 +1,10 @@
 {
-    "python.pythonPath": "/home/liujingyao/anaconda3/envs/tensorflow/bin/python",
+    "python.pythonPath": "/home/liujingyao/anaconda3/envs/pytorch/bin/python",
     "python.linting.flake8Args": [
-        "--max-line-length=120",
+        "--max-line-length=999",
         "--ignore=E402,F841,F401,E302,E305,W293,E231,E226,W391,E501",
     ],
+    "python.linting.pylintArgs": [
+        "--generated-members=numpy.* ,torch.*"
+        ]
 }

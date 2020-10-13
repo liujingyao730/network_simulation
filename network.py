@@ -5,7 +5,6 @@ import networkx as nx
 from scipy import sparse
 import pickle
 import pylab
-import matplotlib.pyplot as plt
 
 import utils
 
