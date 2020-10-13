@@ -24,6 +24,11 @@ class network_data(object):
         self.prefix = args.get("prefix", "default")
         self.data_fold = args.get("data_fold", "data")
         self.sim_step = args.get("sim_step", 0.1)
+        self.batch_size = args.get("batch_size", None)
+        self.init_length = args.get("init_length", 4)
+        self.temporal_length = args.get("temporal_length", 8)
+        self.deltaT = args.get("deltaT", 5)
+        self.step = int(self.deltaT / self.sim_step)
 
         self.dest_size = len(self.destination)
         self.input_size = self.dest_size + 1  # 目的地数目加上通行时间间隔
@@ -39,7 +44,7 @@ class network_data(object):
         self.generate_base_adj()
         self.generate_interval()
         self.generate_network_feature()
-        self.generate_all_adj(self.sim_step)
+        self.generate_all_adj()
 
     def generate_base_adj(self):
 
@@ -97,21 +102,22 @@ class network_data(object):
                     self.network_feature[i][j] += nx.dijkstra_path_length(G, source=i, target=j)
                 except nx.exception.NetworkXNoPath:
                     pass
-        
+        '''
         pos = nx.spring_layout(G)
         nx.draw(G,pos,with_labels=True, node_color='white', edge_color='red', node_size=400, alpha=0.5)
         pylab.title('topology',fontsize=15)
         pylab.savefig("graph.png")
-    
-    def generate_all_adj(self, sim_step):
+        '''
+
+    def generate_all_adj(self):
         
         cycle = [int(tlc[0]) for tlc in self.tlc_time]
         offset = [tlc[1] for tlc in self.tlc_time]
-        cycle_lcm = np.lcm.reduce(cycle)
+        self.cycle_lcm = np.lcm.reduce(cycle)
         self.adj_with_time = []
 
-        for index in range(int(cycle_lcm/sim_step)):
-            base_time = index * sim_step
+        for index in range(int(self.cycle_lcm/self.sim_step)):
+            base_time = index * self.sim_step
             self.adj_with_time.append(self.base_adj)
             for junction_id in range(len(offset)):
                 time = (base_time + offset[junction_id]) % cycle[junction_id]
@@ -122,18 +128,83 @@ class network_data(object):
 
         np.save(os.path.join(self.data_fold, self.prefix+'.npy'), self.adj_with_time)
 
-    def load_cell_data(self, file, args):
+    def load_cell_data(self):
 
-        self.data = pd.read_csv(file, index_col=0)[self.cell_list].value
+        dest1_file = os.path.join(self.data_fold,self.prefix+"_dest1.csv")
+        dest2_file = os.path.join(self.data_fold, self.prefix+"_dest2.csv")
+        dest3_file = os.path.join(self.data_fold, self.prefix+"_dest3.csv")
+        dest4_file = os.path.join(self.data_fold, self.prefix+"_dest4.csv")
+        dest5_file = os.path.join(self.data_fold, self.prefix+"_dest5.csv")
+        dest6_file = os.path.join(self.data_fold, self.prefix+"_dest6.csv")
+
+        dest1 = pd.read_csv(dest1_file, index_col=0)[self.cell_list].values[:, :, None]
+        dest2 = pd.read_csv(dest2_file, index_col=0)[self.cell_list].values[:, :, None]
+        dest3 = pd.read_csv(dest3_file, index_col=0)[self.cell_list].values[:, :, None]
+        dest4 = pd.read_csv(dest4_file, index_col=0)[self.cell_list].values[:, :, None]
+        dest5 = pd.read_csv(dest5_file, index_col=0)[self.cell_list].values[:, :, None]
+        dest6 = pd.read_csv(dest6_file, index_col=0)[self.cell_list].values[:, :, None]
+        network_feature = np.tile(self.network_feature, (dest1.shape[0], 1, 1))
+
+        self.data = np.concatenate((dest1, dest2, dest3, dest4, dest5, dest6, network_feature), axis=2)
+        self.time_bound = self.data.shape[0] - self.step * self.temporal_length
+
+        self.cycle_step = int(self.cycle_lcm / self.sim_step)
+        self.max_batch_size = int(self.data.shape[0] / self.cycle_step)
+  
+        if self.batch_size is None:
+            self.batch_size = self.max_batch_size
+        self.index = 0
+
+    def next_index(self):
+
+        self.index += 1
+
+        phase = self.index % self.cycle_step
+        if phase == 0:
+            self.index += self.cycle_step * self.batch_size
+
+        if self.index > self.time_bound:
+            return False
+        
+        return True
+
+    def get_item(self, point):
+
+        input_time = [point+i*self.step for i in range(self.temporal_length-1)]
+        output_time = [point+(i+self.init_length)*self.step for i in range(self.temporal_length-self.init_length)]
+
+        input_data = self.data[input_time, :, :]
+        output_data = self.data[output_time, :, :]
+
+        return (input_data, output_data)
     
-    def __getitem__(self, index):
+    def get_adj_list(self, point):
 
-        return None
-    
-    def __len__(self):
+        adj_list = []
 
-        return 10
+        for i in range(self.temporal_length):
+            adj = self.adj_with_time[point + i * self.step]
+            adj_list.append(adj)
 
+        return adj_list
+
+    def get_batch(self):
+
+        input_data, output_data = self.get_item(self.index)
+        input_datas = input_data[None, :, :, :]
+        output_datas = output_data[None, :, :, :]
+
+        for i in range(self.batch_size-1):
+            point = (1 + i) * self.cycle_step
+            if point > self.time_bound:
+                break
+            input_data, output_data = self.get_item(point)
+            input_datas = np.concatenate((input_datas, input_data[None, :, :, :]), axis=0)
+            output_datas = np.concatenate((output_datas, output_data[None, :, :, :]), axis=0)
+        
+        adj_list = self.get_adj_list(self.index)
+        
+        return input_datas, output_datas, adj_list
 
 if __name__ == "__main__":
     
@@ -142,9 +213,9 @@ if __name__ == "__main__":
     destiantion = [end + '-2' for end in utils.end_edge.keys()]
     args = {}
     args["sim_step"] = 0.1
-    args["delta_T"] = 5
-    args["temporal_length"] = 80
-    args["init_length"] = 40
+    args["deltaT"] = 5
+    args["temporal_length"] = 8
+    args["init_length"] = 4
     args["prefix"] = "default"
     args["data_fold"] = "data"
     args["start"] = 0
@@ -152,3 +223,6 @@ if __name__ == "__main__":
     args["dest_number"] = 6
     start_cell = [cell for cell in utils.start_edge.keys()]
     a = network_data(net_information, destiantion, args)
+    a.load_cell_data()
+    inputs, outputs, adj_list = a.get_batch()
+    b = 1
