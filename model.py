@@ -3,8 +3,8 @@ import torch.nn as nn
 
 from layers import gcn
 
-class test_model(nn.Module):
 
+class test_model(nn.Module):
     def __init__(self, args):
 
         super().__init__()
@@ -19,8 +19,8 @@ class test_model(nn.Module):
 
         return input_data[:, :, :self.output_size]
 
-class GCN_GRU(nn.Module):
 
+class GCN_GRU(nn.Module):
     def __init__(self, args):
 
         super(GCN_GRU, self).__init__()
@@ -30,13 +30,13 @@ class GCN_GRU(nn.Module):
         self.init_length = args.get("init_length", 4)
 
         self.gnn_type = args.get("gnn", "gcn")
-        if self.gnn_type == "gcn": 
+        if self.gnn_type == "gcn":
             self.init_graph = gcn(self.input_size, self.hidden_size)
             self.forward_gnn = gcn(self.hidden_size, self.hidden_size)
             self.backward_gnn = gcn(self.hidden_size, self.hidden_size)
         else:
             raise NotImplementedError
-        self.sptial_merge = nn.Linear(2*self.hidden_size, self.hidden_size)
+        self.sptial_merge = nn.Linear(2 * self.hidden_size, self.hidden_size)
 
         self.rnn_type = args.get("rnn", "gru")
         if self.rnn_type == "gru":
@@ -46,10 +46,11 @@ class GCN_GRU(nn.Module):
 
     def adj_to_laplace(self, adj_list):
 
-        D_tilde = torch.diag_embed(torch.pow(torch.sum(adj_list, dim=1), -1/2))
+        D_tilde = torch.diag_embed(
+            torch.pow(torch.sum(adj_list, dim=1), -1 / 2))
         laplace = torch.einsum("tbc,tcd->tbd", D_tilde, adj_list)
         laplace = torch.einsum("tbc,tcd->tbd", laplace, D_tilde)
-        
+
         return laplace
 
     def forward(self, input_data, adj_list):
@@ -59,28 +60,36 @@ class GCN_GRU(nn.Module):
         assert feature == self.input_size
         assert temporal > self.init_length
 
-        output = torch.zeros(batch, temporal-self.init_length, cell, self.output_size)
+        output = torch.zeros(batch, temporal - self.init_length, cell,
+                             self.output_size)
 
         laplace_list_forward = self.adj_to_laplace(adj_list)
-        laplace_list_backward = self.adj_to_laplace(torch.transpose(adj_list, 1, 2))
+        laplace_list_backward = self.adj_to_laplace(
+            torch.transpose(adj_list, 1, 2))
 
-        hidden = self.init_graph(input_data[:, 0, :, :], laplace_list_forward[0, :, :])
+        hidden = self.init_graph(input_data[:, 0, :, :],
+                                 laplace_list_forward[0, :, :])
 
         for i in range(temporal):
 
             forward_h = self.forward_gnn(hidden, laplace_list_forward[i, :, :])
-            backwad_h = self.backward_gnn(hidden, laplace_list_backward[i, :, :])
+            backwad_h = self.backward_gnn(hidden,
+                                          laplace_list_backward[i, :, :])
 
             h_space = torch.cat((forward_h, backwad_h), dim=2)
             h_space = self.sptial_merge(h_space)
 
-            hidden = self.temporal_cell(torch.reshape(input_data[:, i, :, :], (batch*cell, feature)), torch.reshape(h_space, (batch*cell, self.hidden_size)))
+            hidden = self.temporal_cell(
+                torch.reshape(input_data[:, i, :, :], (batch * cell, feature)),
+                torch.reshape(h_space, (batch * cell, self.hidden_size)))
             hidden = hidden.view(batch, cell, self.hidden_size)
             if i >= self.init_length:
 
-                output[:, i-self.init_length, :, :] += self.output_layer(hidden)
+                output[:,
+                       i - self.init_length, :, :] += self.output_layer(hidden)
 
         return output
+
 
 if __name__ == "__main__":
 
@@ -90,8 +99,10 @@ if __name__ == "__main__":
 
     input_data = torch.rand(17, 8, 40, 13)
     adj_list = torch.rand(8, 40, 40)
-    
+
     model = GCN_GRU(args)
+    print('# generator parameters:',
+          sum(param.numel() for param in model.parameters()))
 
     output = model(input_data, adj_list)
     fake_loss = torch.sum(output)

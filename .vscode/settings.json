@@ -6,5 +6,8 @@
     ],
     "python.linting.pylintArgs": [
         "--generated-members=numpy.* ,torch.*"
-        ]
+        ],
+    "python.linting.flake8Enabled": true,
+    "python.formatting.provider": "yapf",
+    "python.linting.pylintEnabled": false
 }
