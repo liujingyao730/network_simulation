@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from torch.autograd import Variable
 
 from layers import gcn
 
@@ -60,8 +61,9 @@ class GCN_GRU(nn.Module):
         assert feature == self.input_size
         assert temporal > self.init_length
 
-        output = torch.zeros(batch, temporal - self.init_length, cell,
-                             self.output_size)
+        output = Variable(
+            input_data.data.new(batch, temporal - self.init_length, cell,
+                                self.output_size).fill_(0).float())
 
         laplace_list_forward = self.adj_to_laplace(adj_list)
         laplace_list_backward = self.adj_to_laplace(
@@ -90,6 +92,58 @@ class GCN_GRU(nn.Module):
 
         return output
 
+    def infer(self, input_data, adj_list):
+
+        batch, temporal, cell, feature = input_data.shape
+
+        assert feature == self.input_size
+        assert temporal > self.init_length
+
+        output = Variable(
+            input_data.data.new(batch, temporal - self.init_length, cell,
+                                self.output_size).fill_(0).float())
+
+        laplace_list_forward = self.adj_to_laplace(adj_list)
+        laplace_list_backward = self.adj_to_laplace(
+            torch.transpose(adj_list, 1, 2))
+
+        hidden = self.init_graph(input_data[:, 0, :, :],
+                                 laplace_list_forward[0, :, :])
+
+        inputs = input_data[:, 0, :, :]
+
+        for i in range(temporal):
+
+            forward_h = self.forward_gnn(hidden, laplace_list_forward[i, :, :])
+            backwad_h = self.backward_gnn(hidden,
+                                          laplace_list_backward[i, :, :])
+
+            h_space = torch.cat((forward_h, backwad_h), dim=2)
+            h_space = self.sptial_merge(h_space)
+
+            hidden = self.temporal_cell(
+                torch.reshape(inputs, (batch * cell, feature)),
+                torch.reshape(h_space, (batch * cell, self.hidden_size)))
+            hidden = hidden.view(batch, cell, self.hidden_size)
+            inputs = inputs * 0
+
+            if i >= self.init_length:
+
+                output[:,
+                       i - self.init_length, :, :] += self.output_layer(hidden)
+
+                inputs[:, :, :self.
+                       output_size] += output[:, i - self.init_length, :, :]
+                inputs[:, :,
+                       self.output_size:] += input_data[:, 0, :,
+                                                        self.output_size:]
+
+            else:
+
+                inputs += input_data[:, i + 1, :, :]
+
+        return output
+
 
 if __name__ == "__main__":
 
@@ -105,5 +159,8 @@ if __name__ == "__main__":
           sum(param.numel() for param in model.parameters()))
 
     output = model(input_data, adj_list)
+    fake_loss = torch.sum(output)
+    fake_loss.backward()
+    output = model.infer(input_data, adj_list)
     fake_loss = torch.sum(output)
     fake_loss.backward()

@@ -1,0 +1,218 @@
+import torch
+import torch.nn as nn
+from torch.autograd import Variable
+import pickle
+import numpy as np
+import os
+import yaml
+import torchnet
+import random
+import time
+import argparse
+
+from model import GCN_GRU
+from network import network_data
+import dir_manage as d
+
+import utils
+
+def sparselist_to_tensor(adj_list):
+
+    tensor = np.array(adj_list[0].todense())[None, :, :]
+    for i in range(len(adj_list)-1):
+        tensor = np.concatenate((tensor, np.array(adj_list[i+1].todense())[None, :, :]), axis=0)
+
+    return tensor
+
+def run_epoch(args, model, loss_function, optimizer, meter, sample_rate):
+
+    prefix_list = args.get("prefix", ["default"])
+    destination = args.get("destination", ["-genE0-2", "gneE3-2", "gneE4-2", "gneE5-2", "gneE2-2", "gneE6-2"])
+    net_file = args.get("net_file", "test_net.pkl")
+    use_cuda = args.get("use_cuda", True)
+    grad_clip = args.get("grad_clip", 10)
+    show_every = args.get("show_every", 25)
+
+    if isinstance(net_file, list):
+        assert len(net_file) == len(prefix_list)
+    elif isinstance(net_file, dict):
+        net_file = [net_file[prefix] for prefix in prefix_list]
+    elif isinstance(net_file, str):
+        net_file = [net_file for prefix in prefix_list]
+    
+    if not isinstance(destination[0], list):
+        destination = [destination for i in range(len(prefix_list))]
+
+    batch_index = 0
+
+    for i in range(len(prefix_list)):
+
+        with open(os.path.join(d.cell_data_path, net_file[i]), 'rb') as f:
+            net_information = pickle.load(f)
+
+        data_set = network_data(net_information, destination[i], prefix_list[i], args)
+
+        while True:
+
+            model.zero_grad()
+            optimizer.zero_grad()
+
+            inputs, targets, adj_list = data_set.get_batch()
+            adj_list = Variable(torch.Tensor(sparselist_to_tensor(adj_list)))
+            targets = Variable(torch.Tensor(targets))
+            inputs = Variable(torch.Tensor(inputs))
+
+            if use_cuda:
+                adj_list = adj_list.cuda()
+                targets = targets.cuda()
+                inputs = inputs.cuda()
+
+            if random.random() > sample_rate:
+                outputs = model.infer(inputs, adj_list)
+            else:
+                outputs = model(inputs, adj_list)
+
+            loss = loss_function(targets[:, :, :, :args["output_size"]], outputs)
+
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
+            optimizer.step()
+
+            meter.add(loss.item())
+
+            if batch_index % show_every == 0:
+
+                print("batch {}, train_loss = {:.3f}".format(batch_index, meter.value()[0]))
+
+            batch_index += 1
+
+            if not data_set.next_index():
+                break
+    
+    return meter
+
+def test_epoch(args, model, loss_function, meter):
+
+    prefix_list = args.get("test_prefix", ["default"])
+    destination = args.get("test_destination", ["-genE0-2", "gneE3-2", "gneE4-2", "gneE5-2", "gneE2-2", "gneE6-2"])
+    net_file = args.get("test_net_file", "test_net.pkl")
+    use_cuda = args.get("use_cuda", True)
+    show_every = args.get("show_every", 25)
+
+    if isinstance(net_file, list):
+        assert len(net_file) == len(prefix_list)
+    elif isinstance(net_file, dict):
+        net_file = [net_file[prefix] for prefix in prefix_list]
+    elif isinstance(net_file, str):
+        net_file = [net_file for prefix in prefix_list]
+    
+    batch_index = 0
+
+    if not isinstance(destination[0], list):
+        destination = [destination for i in range(len(prefix_list))]
+
+    for i in range(len(prefix_list)):
+
+        with open(os.path.join(d.cell_data_path, net_file[i]), 'rb') as f:
+            net_information = pickle.load(f)
+
+        data_set = network_data(net_information, destination[i], prefix_list[i], args)
+
+        while True:
+
+            inputs, targets, adj_list = data_set.get_batch()
+
+            adj_list = torch.Tensor(sparselist_to_tensor(adj_list))
+            targets = torch.Tensor(targets)
+            inputs = torch.Tensor(inputs)
+
+            if use_cuda:
+                adj_list = adj_list.cuda()
+                targets = targets.cuda()
+                inputs = inputs.cuda()
+            
+            outputs = model.infer(inputs, adj_list)
+
+            loss = loss_function(targets[:, :, :, :args["output_size"]], outputs)
+
+            meter.add(loss.item())
+
+            if batch_index % show_every == 0:
+
+                print("batch {}, test_loss = {:.3f}".format(batch_index, meter.value()[0]))
+            
+            batch_index += 1
+
+            if not data_set.next_index():
+                break
+    
+    return meter
+
+def train(args):
+
+    with open(os.path.join(d.config_data_path, args.config+".yaml"), 'rb') as f:
+        args = yaml.load(f)
+    
+    record_fold = os.path.join(d.log_path, args.get("name", "default"))
+
+    log_file = open(os.path.join(record_fold, "log.txt"), 'w+')
+
+    for key in args.keys():
+        print(key, " ", args[key])
+        log_file.write(key+"  "+str(args[key])+'\n')
+
+    model = GCN_GRU(args)
+
+    loss_function = torch.nn.MSELoss()
+
+    if args["use_cuda"]:
+        model = model.cuda()
+        loss_function = loss_function.cuda()
+    
+    optimizer = torch.optim.Adagrad(model.parameters(), weight_decay=args["weight_decay"])
+
+    meter = torchnet.meter.AverageValueMeter()
+
+    best_epoch = -1
+    best_loss = float('inf')
+    sample_rate = args.get("sample_rate", 1)
+    sample_decay = args.get("sample_decay", 0.04)
+
+    for epoch in range(args.get("num_epochs", 50)):
+
+        print("training epoch begins")
+
+        model.train()
+        meter.reset()
+
+        start = time.time()
+
+        meter = run_epoch(args, model, loss_function, optimizer, meter, sample_rate)
+
+        end = time.time()
+
+        sample_rate -= sample_decay
+
+        print("epoch{}, training loss = {:.3f}, time consuming {:.2f}".format(epoch, meter.value()[0], end - start))
+        log_file.write("epoch{}, training loss = {:.3f}, time consuming {:.2f}\n".format(epoch, meter.value()[0], end - start))
+
+        meter.reset()
+        model.eval()
+
+        start = time.time()
+
+        meter = test_epoch(args, model, loss_function, meter)
+
+def main():
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("--config", type=str, default="default")
+
+    args = parser.parse_args()
+
+    train(args)
+
+if __name__ == "__main__":
+    
+    main()

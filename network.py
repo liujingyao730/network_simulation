@@ -7,7 +7,7 @@ import pickle
 import pylab
 
 import utils
-
+import dir_manage as d
 
 class network_data(object):
     def __init__(self, net_information, destination, prefix, args):
@@ -21,7 +21,7 @@ class network_data(object):
         self.destination = destination
         self.prefix = prefix
 
-        self.data_fold = args.get("data_fold", "data")
+        self.data_fold = d.cell_data_path
         self.sim_step = args.get("sim_step", 0.1)
         self.batch_size = args.get("batch_size", None)
         self.init_length = args.get("init_length", 4)
@@ -194,10 +194,10 @@ class network_data(object):
     def get_item(self, point):
 
         input_time = [
-            point + i * self.step for i in range(self.temporal_length - 1)
+            point + i * self.step for i in range(self.temporal_length)
         ]
         output_time = [
-            point + (i + self.init_length) * self.step
+            point + (i + self.init_length+1) * self.step
             for i in range(self.temporal_length - self.init_length)
         ]
 
@@ -211,7 +211,7 @@ class network_data(object):
         adj_list = []
 
         for i in range(self.temporal_length):
-            adj = self.adj_with_time[point + i * self.step]
+            adj = self.adj_with_time[(point + i * self.step) % self.cycle_lcm]
             adj_list.append(adj)
 
         return adj_list
@@ -235,6 +235,10 @@ class network_data(object):
         adj_list = self.get_adj_list(self.index)
 
         return input_datas, output_datas, adj_list
+    
+    def reset_index(self):
+
+        self.index = 0
 
 
 if __name__ == "__main__":
