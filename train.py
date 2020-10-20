@@ -189,19 +189,35 @@ def train(args):
 
         meter = run_epoch(args, model, loss_function, optimizer, meter, sample_rate)
 
-        end = time.time()
+        end1 = time.time()
 
         sample_rate -= sample_decay
 
-        print("epoch{}, training loss = {:.3f}, time consuming {:.2f}".format(epoch, meter.value()[0], end - start))
-        log_file.write("epoch{}, training loss = {:.3f}, time consuming {:.2f}\n".format(epoch, meter.value()[0], end - start))
+        print("epoch{}, training loss = {:.3f}, time consuming {:.2f}".format(epoch, meter.value()[0], end1 - start))
+        log_file.write("epoch{}, training loss = {:.3f}, time consuming {:.2f}\n".format(epoch, meter.value()[0], end1 - start))
 
         meter.reset()
         model.eval()
 
-        start = time.time()
-
         meter = test_epoch(args, model, loss_function, meter)
+
+        end2 = time.time()
+
+        print("epoch{}, test loss = {:.3f}, time consuming {:.2f}".format(epoch, meter.value()[0], end2 - start))
+        log_file.write("epoch{}, test loss = {:.3f}, time consuming {:.2f}\n".format(epoch, meter.value()[0], end2 - start))
+
+        if meter.value()[0] < best_loss:
+            best_epoch = epoch
+            best_loss = meter.value()[0]
+
+        torch.save({
+            "epoch": epoch,
+            "start_dict": model.state_dict(),
+            "optimizer_state_dict": optimizer.state_dict()
+        }, os.path.join(record_fold, str(epoch)+'.tar'))
+    
+    print("best epoch {}, best loss {}".format(best_epoch, best_loss))
+    log_file.write("best epoch {}, best loss {}\n".format(best_epoch, best_loss))
 
 def main():
 
