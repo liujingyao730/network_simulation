@@ -9,3 +9,5 @@
 *.json
 *.png
 *.npy
+*.tar
+*.txt

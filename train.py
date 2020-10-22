@@ -133,7 +133,7 @@ def test_epoch(args, model, loss_function, meter):
             
             outputs = model.infer(inputs, adj_list)
 
-            loss = loss_function(targets[:, :, :, :args["output_size"]], outputs)
+            loss = loss_function(torch.sum(targets[:, :, :, :args["output_size"]], dim=3), torch.sum(outputs, dim=3))
 
             meter.add(loss.item())
 
@@ -154,6 +154,9 @@ def train(args):
         args = yaml.load(f)
     
     record_fold = os.path.join(d.log_path, args.get("name", "default"))
+
+    if not os.path.exists(record_fold):
+        os.makedirs(record_fold)
 
     log_file = open(os.path.join(record_fold, "log.txt"), 'w+')
 
@@ -223,7 +226,7 @@ def main():
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--config", type=str, default="default")
+    parser.add_argument("--config", type=str, default="only_two")
 
     args = parser.parse_args()
 
