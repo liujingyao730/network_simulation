@@ -239,6 +239,10 @@ class network_data(object):
     def reset_index(self):
 
         self.index = 0
+    
+    def name_to_id(self, names):
+
+        return [self.cell_index[name] for name in names]
 
 
 if __name__ == "__main__":

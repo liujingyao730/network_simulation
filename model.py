@@ -22,13 +22,14 @@ class test_model(nn.Module):
 
 
 class GCN_GRU(nn.Module):
-    def __init__(self, args):
+    def __init__(self, args, input_cells=None):
 
         super(GCN_GRU, self).__init__()
         self.input_size = args["input_size"]
         self.output_size = args["output_size"]
         self.hidden_size = args.get("hidden_size", 64)
         self.init_length = args.get("init_length", 4)
+        self.input_cells = input_cells
 
         self.gnn_type = args.get("gnn", "gcn")
         if self.gnn_type == "gcn":
@@ -92,12 +93,17 @@ class GCN_GRU(nn.Module):
 
         return output
 
+    def set_input_cells(self, input_cells):
+
+        self.input_cells = input_cells
+
     def infer(self, input_data, adj_list):
 
         batch, temporal, cell, feature = input_data.shape
 
         assert feature == self.input_size
         assert temporal > self.init_length
+        assert self.input_cells is not None
 
         output = Variable(
             input_data.data.new(batch, temporal - self.init_length, cell,
@@ -125,7 +131,6 @@ class GCN_GRU(nn.Module):
                 torch.reshape(inputs, (batch * cell, feature)),
                 torch.reshape(h_space, (batch * cell, self.hidden_size)))
             hidden = hidden.view(batch, cell, self.hidden_size)
-            inputs = inputs * 0
 
             if i >= self.init_length:
 
@@ -133,10 +138,12 @@ class GCN_GRU(nn.Module):
                        i - self.init_length, :, :] += self.output_layer(hidden)
 
                 inputs[:, :, :self.
-                       output_size] += output[:, i - self.init_length, :, :]
-                inputs[:, :,
-                       self.output_size:] += input_data[:, 0, :,
-                                                        self.output_size:]
+                       output_size] = output[:, i - self.init_length, :, :]
+                inputs[:, :, self.output_size:] = input_data[:, 0, :,
+                                                             self.output_size:]
+                inputs[:, self.input_cells, :self.
+                       output_size] = input_data[:, i, self.input_cells, :self.
+                                                 output_size]
 
             else:
 
@@ -155,6 +162,7 @@ if __name__ == "__main__":
     adj_list = torch.rand(8, 40, 40)
 
     model = GCN_GRU(args)
+    model.set_input_cells([0, 1, 2, 3])
     print('# generator parameters:',
           sum(param.numel() for param in model.parameters()))
 

@@ -13,22 +13,15 @@ import argparse
 from model import GCN_GRU
 from network import network_data
 import dir_manage as d
+from utils import sparselist_to_tensor
 
-import utils
-
-def sparselist_to_tensor(adj_list):
-
-    tensor = np.array(adj_list[0].todense())[None, :, :]
-    for i in range(len(adj_list)-1):
-        tensor = np.concatenate((tensor, np.array(adj_list[i+1].todense())[None, :, :]), axis=0)
-
-    return tensor
 
 def run_epoch(args, model, loss_function, optimizer, meter, sample_rate):
 
     prefix_list = args.get("prefix", ["default"])
     destination = args.get("destination", ["-genE0-2", "gneE3-2", "gneE4-2", "gneE5-2", "gneE2-2", "gneE6-2"])
     net_file = args.get("net_file", "test_net.pkl")
+    input_cells_name = args.get("input_cells_name", ["gneE0-0", "-gneE3-0", "-gneE4-0", "-gneE5-0", "-gneE2-0", "-gneE6-0"])
     use_cuda = args.get("use_cuda", True)
     grad_clip = args.get("grad_clip", 10)
     show_every = args.get("show_every", 25)
@@ -43,6 +36,9 @@ def run_epoch(args, model, loss_function, optimizer, meter, sample_rate):
     if not isinstance(destination[0], list):
         destination = [destination for i in range(len(prefix_list))]
 
+    if not isinstance(input_cells_name[0], list):
+        input_cells_name = [input_cells_name for i in range(len(prefix_list))]
+
     batch_index = 0
 
     for i in range(len(prefix_list)):
@@ -51,6 +47,8 @@ def run_epoch(args, model, loss_function, optimizer, meter, sample_rate):
             net_information = pickle.load(f)
 
         data_set = network_data(net_information, destination[i], prefix_list[i], args)
+        input_cells = data_set.name_to_id(input_cells_name[i])
+        model.set_input_cells(input_cells)
 
         while True:
 
@@ -58,6 +56,7 @@ def run_epoch(args, model, loss_function, optimizer, meter, sample_rate):
             optimizer.zero_grad()
 
             inputs, targets, adj_list = data_set.get_batch()
+
             adj_list = Variable(torch.Tensor(sparselist_to_tensor(adj_list)))
             targets = Variable(torch.Tensor(targets))
             inputs = Variable(torch.Tensor(inputs))
@@ -72,7 +71,7 @@ def run_epoch(args, model, loss_function, optimizer, meter, sample_rate):
             else:
                 outputs = model(inputs, adj_list)
 
-            loss = loss_function(targets[:, :, :, :args["output_size"]], outputs)
+            loss = loss_function(torch.sum(targets[:, :, :, :args["output_size"]], dim=3), torch.sum(outputs, dim=3))
 
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
@@ -96,6 +95,7 @@ def test_epoch(args, model, loss_function, meter):
     prefix_list = args.get("test_prefix", ["default"])
     destination = args.get("test_destination", ["-genE0-2", "gneE3-2", "gneE4-2", "gneE5-2", "gneE2-2", "gneE6-2"])
     net_file = args.get("test_net_file", "test_net.pkl")
+    input_cells_name = args.get("test_input_cells_name", ["gneE0-0", "-gneE3-0", "-gneE4-0", "-gneE5-0", "-gneE2-0", "-gneE6-0"])
     use_cuda = args.get("use_cuda", True)
     show_every = args.get("show_every", 25)
 
@@ -105,11 +105,14 @@ def test_epoch(args, model, loss_function, meter):
         net_file = [net_file[prefix] for prefix in prefix_list]
     elif isinstance(net_file, str):
         net_file = [net_file for prefix in prefix_list]
-    
-    batch_index = 0
 
     if not isinstance(destination[0], list):
         destination = [destination for i in range(len(prefix_list))]
+    
+    if not isinstance(input_cells_name[0], list):
+        input_cells_name = [input_cells_name for i in range(len(prefix_list))]
+    
+    batch_index = 0
 
     for i in range(len(prefix_list)):
 
@@ -117,20 +120,22 @@ def test_epoch(args, model, loss_function, meter):
             net_information = pickle.load(f)
 
         data_set = network_data(net_information, destination[i], prefix_list[i], args)
+        input_cells = data_set.name_to_id(input_cells_name[i])
+        model.set_input_cells(input_cells)
 
         while True:
-
+ 
             inputs, targets, adj_list = data_set.get_batch()
 
             adj_list = torch.Tensor(sparselist_to_tensor(adj_list))
             targets = torch.Tensor(targets)
             inputs = torch.Tensor(inputs)
-
+ 
             if use_cuda:
                 adj_list = adj_list.cuda()
                 targets = targets.cuda()
                 inputs = inputs.cuda()
-            
+
             outputs = model.infer(inputs, adj_list)
 
             loss = loss_function(torch.sum(targets[:, :, :, :args["output_size"]], dim=3), torch.sum(outputs, dim=3))
@@ -151,7 +156,7 @@ def test_epoch(args, model, loss_function, meter):
 def train(args):
 
     with open(os.path.join(d.config_data_path, args.config+".yaml"), 'rb') as f:
-        args = yaml.load(f)
+        args = yaml.load(f, Loader=yaml.FullLoader)
     
     record_fold = os.path.join(d.log_path, args.get("name", "default"))
 
@@ -215,7 +220,7 @@ def train(args):
 
         torch.save({
             "epoch": epoch,
-            "start_dict": model.state_dict(),
+            "state_dict": model.state_dict(),
             "optimizer_state_dict": optimizer.state_dict()
         }, os.path.join(record_fold, str(epoch)+'.tar'))
     

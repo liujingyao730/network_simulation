@@ -40,3 +40,19 @@ test_destination:
   - gneE6-2
 
 test_net_file: test_net.pkl
+
+input_cells_name:
+  - "gneE0-0"
+  - "-gneE3-0"
+  - "-gneE4-0"
+  - "-gneE5-0"
+  - "-gneE2-0"
+  - "-gneE6-0"
+
+test_input_cells_name:
+  - "gneE0-0"
+  - "-gneE3-0"
+  - "-gneE4-0"
+  - "-gneE5-0"
+  - "-gneE2-0"
+  - "-gneE6-0"
