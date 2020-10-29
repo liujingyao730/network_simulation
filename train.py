@@ -211,8 +211,8 @@ def train(args):
 
         end2 = time.time()
 
-        print("epoch{}, test loss = {:.3f}, time consuming {:.2f}".format(epoch, meter.value()[0], end2 - start))
-        log_file.write("epoch{}, test loss = {:.3f}, time consuming {:.2f}\n".format(epoch, meter.value()[0], end2 - start))
+        print("epoch{}, test loss = {:.3f}, time consuming {:.2f}".format(epoch, meter.value()[0], end2 - end1))
+        log_file.write("epoch{}, test loss = {:.3f}, time consuming {:.2f}\n".format(epoch, meter.value()[0], end2 - end1))
 
         if meter.value()[0] < best_loss:
             best_epoch = epoch
