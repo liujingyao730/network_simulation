@@ -5,8 +5,9 @@ import networkx as nx
 from scipy import sparse
 import pickle
 import pylab
+import torch
 
-import utils
+import route_conf
 import dir_manage as d
 
 class network_data(object):
@@ -236,6 +237,37 @@ class network_data(object):
 
         return input_datas, output_datas, adj_list
     
+    def normalize_data(self):
+
+        self.mean = np.mean(self.data[:, :, :self.dest_size], axis=(0, 1))
+        self.std = np.std(self.data[:, :, :self.dest_size], axis=(0, 1))
+
+        self.std[self.std == 0] = 1
+
+        self.data[:, :, :self.dest_size] -= self.mean[None, None, :]
+        self.data[:, :, :self.dest_size] /= self.std[None, None, :]
+
+    def recovery_data(self, data):
+
+        [batch_size, temporal, cells, feature] = data.shape
+
+        assert feature >= self.dest_size
+
+        if isinstance(data, np.ndarray):
+
+            data[:, :, :, :self.dest_size] *= self.std[None, None, None, :]
+            data[:, :, :, :self.dest_size] += self.mean[None, None, None, :]
+        
+        else:
+
+            tmp_std = data.data.new(1, 1, 1, self.dest_size).fill_(torch.Tensor(self.std[None, None, None, :])).float()
+            tmp_mean = data.data.new(1, 1, 1, self.dest_size).fill_(torch.Tensor(self.mean[None, None, None, :])).float()
+
+            data[:, :, :, :self.dest_size] *= tmp_std
+            data[:, :, :, :self.dest_size] += tmp_mean
+
+        return data
+    
     def reset_index(self):
 
         self.index = 0
@@ -247,9 +279,9 @@ class network_data(object):
 
 if __name__ == "__main__":
 
-    with open("test_net.pkl", 'rb') as f:
+    with open("data/input_data/test_net.pkl", 'rb') as f:
         net_information = pickle.load(f)
-    destiantion = [end + '-2' for end in utils.end_edge.keys()]
+    destiantion = [end + '-2' for end in route_conf.end_edge.keys()]
     prefix = "default"
     args = {}
     args["sim_step"] = 0.1
@@ -260,7 +292,9 @@ if __name__ == "__main__":
     args["start"] = 0
     args["use_cuda"] = True
     args["dest_number"] = 6
-    start_cell = [cell for cell in utils.start_edge.keys()]
+    start_cell = [cell for cell in route_conf.start_edge.keys()]
     a = network_data(net_information, destiantion, prefix, args)
+    a.normalize_data()
     inputs, outputs, adj_list = a.get_batch()
+    input = a.recovery_data(inputs)
     b = 1
