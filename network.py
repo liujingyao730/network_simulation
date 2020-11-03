@@ -260,8 +260,8 @@ class network_data(object):
         
         else:
 
-            tmp_std = data.data.new(1, 1, 1, self.dest_size).fill_(torch.Tensor(self.std[None, None, None, :])).float()
-            tmp_mean = data.data.new(1, 1, 1, self.dest_size).fill_(torch.Tensor(self.mean[None, None, None, :])).float()
+            tmp_std = data.data.new(self.std).expand(1, 1, 1, self.dest_size)
+            tmp_mean = data.data.new(self.mean).expand(1, 1, 1, self.dest_size)
 
             data[:, :, :, :self.dest_size] *= tmp_std
             data[:, :, :, :self.dest_size] += tmp_mean

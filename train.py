@@ -141,7 +141,7 @@ def test_epoch(args, model, loss_function, meter):
             outputs = model.infer(inputs, adj_list)
             
             targets = data_set.recovery_data(targets)
-            outputs = data_set.recovery_data(targets)
+            outputs = data_set.recovery_data(outputs)
 
             loss = loss_function(torch.sum(targets[:, :, :, :args["output_size"]], dim=3), torch.sum(outputs, dim=3))
 
