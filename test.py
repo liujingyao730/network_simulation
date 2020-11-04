@@ -15,19 +15,20 @@ basic_conf = os.path.join(d.config_data_path, "default.yaml")
 with open(basic_conf, 'rb') as f:
     args = yaml.load(f, Loader=yaml.FullLoader)
 
-args["prefix"] = "two_6"
+args["prefix"] = "two_5"
 
 args["init_length"] = 4
 args["temporal_length"] = 1400
 args["batch_size"] = 1
 args["net_file"] = "two_net.pkl"
 args["model_prefix"] = "only_two_GRU_GCN"
-args["model"] = "25"
+args["model"] = "19"
 
 with open(os.path.join(d.cell_data_path, args["net_file"]), 'rb') as f:
     net_information = pickle.load(f)
 
 data_set = network_data(net_information, args["destination"], args["prefix"], args)
+# data_set.normalize_data()
 
 inputs, target, adj_list = data_set.get_batch()
 
@@ -49,6 +50,9 @@ model.set_input_cells(cell_index)
 
 output = model.infer(inputs, adj_list)
 
+# target = data_set.recovery_data(target)
+# output = data_set.recovery_data(output)
+
 f = torch.nn.MSELoss()
 output = torch.sum(output, dim=3)
 target = torch.sum(target[:, :, :, :args["output_size"]], dim=3)
@@ -56,12 +60,12 @@ target = torch.sum(target[:, :, :, :args["output_size"]], dim=3)
 print(f(output, target))
 print(f(output[:, -1, :], target[:, -1, :]))
 
-real_cell = target[0, :, 0].detach().cpu().numpy()
-predict_cell = output[0, :, 0].detach().cpu().numpy()
-x = np.array(range(100))
+real_cell = target[0, :, 23].detach().cpu().numpy()[:100]
+predict_cell = output[0, :, 23].detach().cpu().numpy()[:100]
+x = np.array(range(len(real_cell)))
 
 plt.figure()
-plt.plot(x, real_cell[:100], label="gt")
-plt.plot(x, predict_cell[:100], label="pd")
+plt.plot(x, real_cell, label="gt")
+plt.plot(x, predict_cell, label="pd")
 plt.legend()
 plt.savefig("123.png")

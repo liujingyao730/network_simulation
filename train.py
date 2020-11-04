@@ -47,7 +47,7 @@ def run_epoch(args, model, loss_function, optimizer, meter, sample_rate):
             net_information = pickle.load(f)
 
         data_set = network_data(net_information, destination[i], prefix_list[i], args)
-        data_set.normalize_data()
+        # data_set.normalize_data()
         input_cells = data_set.name_to_id(input_cells_name[i])
         model.set_input_cells(input_cells)
 
@@ -121,7 +121,7 @@ def test_epoch(args, model, loss_function, meter):
             net_information = pickle.load(f)
 
         data_set = network_data(net_information, destination[i], prefix_list[i], args)
-        data_set.normalize_data()
+        # data_set.normalize_data()
         input_cells = data_set.name_to_id(input_cells_name[i])
         model.set_input_cells(input_cells)
 
@@ -140,8 +140,8 @@ def test_epoch(args, model, loss_function, meter):
 
             outputs = model.infer(inputs, adj_list)
             
-            targets = data_set.recovery_data(targets)
-            outputs = data_set.recovery_data(outputs)
+            # targets = data_set.recovery_data(targets)
+            # outputs = data_set.recovery_data(outputs)
 
             loss = loss_function(torch.sum(targets[:, :, :, :args["output_size"]], dim=3), torch.sum(outputs, dim=3))
 
