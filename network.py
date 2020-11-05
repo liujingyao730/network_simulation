@@ -2,15 +2,16 @@ import pandas as pd
 import os
 import numpy as np
 import networkx as nx
+import matplotlib.pyplot as plt
 from scipy import sparse
 import pickle
-import pylab
 import torch
 import time
 
 import route_conf
 import dir_manage as d
 import utils
+import draw_utils
 
 class network_data(object):
     def __init__(self, net_information, destination, prefix, args):
@@ -115,12 +116,6 @@ class network_data(object):
                         G, source=i, target=j)
                 except nx.exception.NetworkXNoPath:
                     pass
-        '''
-        pos = nx.spring_layout(G)
-        nx.draw(G,pos,with_labels=True, node_color='white', edge_color='red', node_size=400, alpha=0.5)
-        pylab.title('topology',fontsize=15)
-        pylab.savefig("graph.png")
-        '''
 
     def generate_all_adj(self):
 
@@ -133,16 +128,16 @@ class network_data(object):
             base_time = index * self.sim_step
             self.adj_with_time.append(self.base_adj)
             for junction_id in range(len(offset)):
-                time = (base_time + offset[junction_id]) % cycle[junction_id]
+                time_t = (base_time + offset[junction_id]) % cycle[junction_id]
                 for connect_id in range(len(self.intervals[junction_id])):
                     if self.intervals[junction_id][connect_id][
-                            0] <= time <= self.intervals[junction_id][
+                            0] <= time_t <= self.intervals[junction_id][
                                 connect_id][1]:
                         self.adj_with_time[index] += self.loc_adj[junction_id][
                             connect_id]
                         self.network_feature[self.intervals[junction_id][
                             connect_id][2]][self.dest_size] = self.intervals[
-                                junction_id][connect_id][1] - time
+                                junction_id][connect_id][1] - time_t
 
         # np.save(os.path.join(self.data_fold, self.prefix+'.npy'), self.adj_with_time)
     
@@ -221,7 +216,7 @@ class network_data(object):
         adj_list = []
 
         for i in range(self.temporal_length):
-            adj = self.adj_with_time[(point + i * self.step) % self.cycle_lcm]
+            adj = self.adj_with_time[(point + i * self.step) % self.cycle_step]
             adj_list.append(adj)
 
         return adj_list
@@ -239,7 +234,7 @@ class network_data(object):
         adj_list = []
 
         for i in range(self.temporal_length):
-            adj = self.adj_with_time[(point + i * self.step) % self.cycle_lcm]
+            adj = self.norm_adj[(point + i * self.step) % self.cycle_step]
             adj_list.append(adj)
 
     def get_batch(self):
@@ -301,6 +296,30 @@ class network_data(object):
 
         return [self.cell_index[name] for name in names]
 
+    def show_adj(self, adj, network_type="two", file="graph.png"):
+
+        if network_type == "two":
+            pos = draw_utils.two_net_pos
+        elif network_type == "three":
+            raise NotImplementedError
+        elif network_type == "four":
+            raise NotImplementedError
+        else:
+            raise NotImplementedError
+        adj = sparse.coo_matrix(adj)
+        row = adj.row
+        col = adj.col
+
+        edges = [(row[i], col[i]) for i in range(len(row))]
+
+        G = nx.DiGraph()
+        N = nx.path_graph(self.N)
+        G.add_nodes_from(N)
+        G.add_edges_from(edges)
+ 
+        nx.draw(G,pos,with_labels=True, node_color='white', edge_color='red', node_size=400, alpha=0.5)
+        plt.savefig(file)
+        plt.cla()
 
 if __name__ == "__main__":
 
@@ -311,7 +330,7 @@ if __name__ == "__main__":
     args = {}
     args["sim_step"] = 0.1
     args["deltaT"] = 5
-    args["temporal_length"] = 8
+    args["temporal_length"] = 20
     args["init_length"] = 4
     args["data_fold"] = "data"
     args["start"] = 0
@@ -319,14 +338,7 @@ if __name__ == "__main__":
     args["dest_number"] = 6
     start_cell = [cell for cell in route_conf.start_edge.keys()]
     a = network_data(net_information, destiantion, prefix, args)
-    a.normalize_data()
-    inputs, outputs, adj_list = a.get_batch()
-    input = a.recovery_data(inputs)
-    t1 = time.time()
-    a.normalize_adj()
-    t2 = time.time()
-    np.save("test.npy", a.norm_adj)
-    t3 = time.time()
-    t = np.load("test.npy", allow_pickle=True)
-    t4 = time.time()
+    input, output, adj_list = a.get_batch()
+    for i in range(len(adj_list)):
+        a.show_adj(adj_list[i], file=str(i)+'.png')
     b = 1
