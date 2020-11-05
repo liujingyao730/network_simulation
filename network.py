@@ -116,28 +116,32 @@ class network_data(object):
                         G, source=i, target=j)
                 except nx.exception.NetworkXNoPath:
                     pass
+        
+        self.network_feature = self.network_feature[None, :, :]
+        junction_input = [self.cell_index[cell] for cell in self.signal_connection.keys()]
+        self.network_feature[:, junction_input, self.dest_size] = -1
 
     def generate_all_adj(self):
 
         cycle = [int(tlc[0]) for tlc in self.tlc_time]
         offset = [tlc[1] for tlc in self.tlc_time]
         self.cycle_lcm = np.lcm.reduce(cycle)
+        self.cycle_step = int(self.cycle_lcm / self.sim_step)
+        self.network_feature = self.network_feature.repeat(self.cycle_step, axis=0)
         self.adj_with_time = []
 
-        for index in range(int(self.cycle_lcm / self.sim_step)):
+        for index in range(self.cycle_step):
             base_time = index * self.sim_step
             self.adj_with_time.append(self.base_adj)
             for junction_id in range(len(offset)):
                 time_t = (base_time + offset[junction_id]) % cycle[junction_id]
                 for connect_id in range(len(self.intervals[junction_id])):
-                    if self.intervals[junction_id][connect_id][
-                            0] <= time_t <= self.intervals[junction_id][
-                                connect_id][1]:
-                        self.adj_with_time[index] += self.loc_adj[junction_id][
-                            connect_id]
-                        self.network_feature[self.intervals[junction_id][
-                            connect_id][2]][self.dest_size] = self.intervals[
-                                junction_id][connect_id][1] - time_t
+                    start_time = self.intervals[junction_id][connect_id][0]
+                    end_time = self.intervals[junction_id][connect_id][1]
+                    from_id = self.intervals[junction_id][connect_id][2]
+                    if start_time <= time_t < end_time:
+                        self.adj_with_time[index] += self.loc_adj[junction_id][connect_id]
+                        self.network_feature[index, from_id, self.dest_size] = end_time - time_t
 
         # np.save(os.path.join(self.data_fold, self.prefix+'.npy'), self.adj_with_time)
     
@@ -169,14 +173,10 @@ class network_data(object):
                             index_col=0)[self.cell_list].values[:, :, None]
         dest6 = pd.read_csv(dest6_file,
                             index_col=0)[self.cell_list].values[:, :, None]
-        network_feature = np.tile(self.network_feature, (dest1.shape[0], 1, 1))
 
-        self.data = np.concatenate(
-            (dest1, dest2, dest3, dest4, dest5, dest6, network_feature),
-            axis=2)
+        self.data = np.concatenate((dest1, dest2, dest3, dest4, dest5, dest6), axis=2)
         self.time_bound = self.data.shape[0] - self.step * self.temporal_length
 
-        self.cycle_step = int(self.cycle_lcm / self.sim_step)
         self.max_batch_size = int(self.data.shape[0] / self.cycle_step)
 
         if self.batch_size is None:
@@ -206,8 +206,17 @@ class network_data(object):
             for i in range(self.temporal_length - self.init_length)
         ]
 
-        input_data = self.data[input_time, :, :]
-        output_data = self.data[output_time, :, :]
+        cycle_input_time = [
+            (point + i * self.step) % self.cycle_step for i in range(self.temporal_length)
+        ]
+        cycle_output_time = [
+            (point + (i + self.init_length+1) * self.step) % self.cycle_step for i in range(self.temporal_length - self.init_length)
+        ]
+
+        input_data = np.concatenate(
+            (self.data[input_time, :, :], self.network_feature[cycle_input_time, :, :]), axis=2)
+        output_data = np.concatenate(
+            (self.data[output_time, :, :], self.network_feature[cycle_output_time, :, :]), axis=2)
 
         return (input_data, output_data)
 
