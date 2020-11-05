@@ -6,9 +6,11 @@ from scipy import sparse
 import pickle
 import pylab
 import torch
+import time
 
 import route_conf
 import dir_manage as d
+import utils
 
 class network_data(object):
     def __init__(self, net_information, destination, prefix, args):
@@ -143,6 +145,13 @@ class network_data(object):
                                 junction_id][connect_id][1] - time
 
         # np.save(os.path.join(self.data_fold, self.prefix+'.npy'), self.adj_with_time)
+    
+    def normalize_adj(self):
+
+        self.norm_adj = []
+
+        for i in range(len(self.adj_with_time)):
+            self.norm_adj.append(utils.normalize_adj(self.adj_with_time[i]))
 
     def load_cell_data(self):
 
@@ -216,6 +225,22 @@ class network_data(object):
             adj_list.append(adj)
 
         return adj_list
+
+    def load_norm_adj(self, file):
+
+        self.norm_adj = np.load(file)
+    
+    def save_norm_adj(self, file):
+
+        np.save(file, self.norm_adj)
+
+    def get_norm_adj(self, point):
+        
+        adj_list = []
+
+        for i in range(self.temporal_length):
+            adj = self.adj_with_time[(point + i * self.step) % self.cycle_lcm]
+            adj_list.append(adj)
 
     def get_batch(self):
 
@@ -297,4 +322,11 @@ if __name__ == "__main__":
     a.normalize_data()
     inputs, outputs, adj_list = a.get_batch()
     input = a.recovery_data(inputs)
+    t1 = time.time()
+    a.normalize_adj()
+    t2 = time.time()
+    np.save("test.npy", a.norm_adj)
+    t3 = time.time()
+    t = np.load("test.npy", allow_pickle=True)
+    t4 = time.time()
     b = 1
