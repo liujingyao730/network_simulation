@@ -75,12 +75,13 @@ def net_resolve(file, pickle_file):
                 connection_edge = "_".join(connection_id.split("_")[:-1])
                 connection_from = child.attrib["from"]
                 connection_to = child.attrib["to"]
+                connection_dir = child.attrib["dir"]
                 if "tl" in child.attrib.keys():
                     connection_tlc = child.attrib["tl"]
                 else:
                     from_lane = connection_from + "_" + child.attrib["fromLane"]
                     connection_tlc = junction_connection[from_lane]["tlc"]
-                junction_connection[connection_id] = {"from":connection_from, "to":connection_to, "tlc":connection_tlc}
+                junction_connection[connection_id] = {"from":connection_from, "to":connection_to, "tlc":connection_tlc, "dir":connection_dir}
 
     junction_cell = {}
     ordinary_cell = {}
@@ -127,6 +128,7 @@ def net_resolve(file, pickle_file):
                     inter_lane = junction[tlc_id]["intLanes"][index]
                     from_edge = junction_connection[inter_lane]["from"]
                     to_edge = junction_connection[inter_lane]["to"]
+                    con_dir = junction_connection[inter_lane]["dir"]
                     via_edge = "_".join(inter_lane.split("_")[:-1])
                     to_cell = to_edge + "-0"
                     if from_edge not in ordinary_cell.keys():
@@ -137,7 +139,7 @@ def net_resolve(file, pickle_file):
                         signal_connection[from_cell] = {}
                     
                     if to_cell not in signal_connection[from_cell].keys():
-                        signal_connection[from_cell][to_cell] = [start, end, tlc_index]
+                        signal_connection[from_cell][to_cell] = [start, end, tlc_index, con_dir]
                     else:
                         if start == signal_connection[from_cell][to_cell][1]:
                             signal_connection[from_cell][to_cell][1] = end
@@ -288,6 +290,6 @@ def fcd_resolve(fcd_file, net_information, prefix="default"):
 
     save_file(prefix)
 
-net_information = net_resolve(net_file, "test_net.pkl")
+net_information = net_resolve(net_file, "two_net.pkl")
 init_dataframe(net_information["ordinary_cell"], net_information["junction_cell"])
 fcd_resolve(fcd_file, net_information)

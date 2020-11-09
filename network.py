@@ -81,10 +81,21 @@ class network_data(object):
                 to_id = self.cell_index[to_cell]
                 start = self.signal_connection[from_cell][to_cell][0]
                 end = self.signal_connection[from_cell][to_cell][1]
+                con_dir = self.signal_connection[from_cell][to_cell][3]
+
+                if con_dir == "l":
+                    weight = 0.33
+                elif con_dir == "r":
+                    weight = 0.5
+                elif con_dir == 's':
+                    weight = 1
+                else:
+                    raise NotImplementedError
+
                 self.intervals[junction_id].append(
                     [start, end, from_id, to_id])
                 self.loc_adj[junction_id].append(
-                    sparse.csc_matrix(([1], ([from_id], [to_id])),
+                    sparse.csc_matrix(([weight], ([from_id], [to_id])),
                                       shape=(self.N, self.N)))
                 self.rows.append(from_id)
                 self.cols.append(to_id)
@@ -332,7 +343,7 @@ class network_data(object):
 
 if __name__ == "__main__":
 
-    with open("data/input_data/test_net.pkl", 'rb') as f:
+    with open("data/input_data/two_net.pkl", 'rb') as f:
         net_information = pickle.load(f)
     destiantion = [end + '-2' for end in route_conf.end_edge.keys()]
     prefix = "default"
