@@ -316,7 +316,7 @@ class network_data(object):
 
         return [self.cell_index[name] for name in names]
 
-    def show_adj(self, adj, network_type="two", file="graph.png"):
+    def show_adj(self, adj, network_type="two", file="graph.png", colors="white", with_label=False):
 
         if network_type == "two":
             pos = draw_utils.two_net_pos
@@ -337,7 +337,10 @@ class network_data(object):
         G.add_nodes_from(N)
         G.add_edges_from(edges)
  
-        nx.draw(G,pos,with_labels=True, node_color='white', edge_color='red', node_size=400, alpha=0.5)
+        nx.draw(G,pos, node_color=colors, edge_color='red', node_size=400, alpha=0.5)
+        if with_label:
+            labels = {i:colors[i] for i in range(len(colors))}
+            nx.draw_networkx_labels(G, pos, labels=labels)
         plt.savefig(file)
         plt.cla()
 
