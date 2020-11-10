@@ -100,6 +100,8 @@ class GCN_GRU(nn.Module):
     def infer(self, input_data, adj_list):
 
         batch, temporal, cell, feature = input_data.shape
+        
+        predict_cells = [i for i in range(cell) if i not in self.input_cells]
 
         assert feature == self.input_size
         assert temporal > self.init_length
@@ -134,16 +136,11 @@ class GCN_GRU(nn.Module):
 
             if i >= self.init_length:
 
-                output[:,
-                       i - self.init_length, :, :] += self.output_layer(hidden)
+                output[:, i - self.init_length, predict_cells, :] += self.output_layer(hidden[:, predict_cells, :])
+                output[:, i - self.init_length, self.input_cells, :] += input_data[:, i, self.input_cells, :self.output_size]
 
-                inputs[:, :, :self.
-                       output_size] = output[:, i - self.init_length, :, :]
-                inputs[:, :, self.output_size:] = input_data[:, 0, :,
-                                                             self.output_size:]
-                inputs[:, self.input_cells, :self.
-                       output_size] = input_data[:, i, self.input_cells, :self.
-                                                 output_size]
+                inputs[:, :, :self.output_size] = output[:, i - self.init_length, :, :]
+                inputs[:, :, self.output_size:] = input_data[:, 0, :, self.output_size:]
 
             else:
 
