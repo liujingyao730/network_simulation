@@ -185,7 +185,7 @@ class network_data(object):
         dest6 = pd.read_csv(dest6_file,
                             index_col=0)[self.cell_list].values[:, :, None]
 
-        self.data = np.concatenate((dest1, dest2, dest3, dest4, dest5, dest6), axis=2)
+        self.data = np.concatenate((dest1, dest2, dest3, dest4, dest5, dest6), axis=2).astype("float64")
         self.time_bound = self.data.shape[0] - self.step * self.temporal_length
 
         self.max_batch_size = int(self.data.shape[0] / self.cycle_step)
