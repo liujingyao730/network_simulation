@@ -10,13 +10,19 @@ grad_clip: 10
 sample_rate: 1
 sample_decay: 0.02
 
+init_length: 8
+temporal_length: 20
 sim_step: 0.1
 delteT: 5
 
-name: default
+name: normalized_long_init
 
 prefix:
-  - default
+  - two_1
+  - two_2
+  - two_3
+  - two_4
+  - two_5
 
 destination:
   - -gneE0-2
@@ -26,10 +32,10 @@ destination:
   - gneE2-2
   - gneE6-2
 
-net_file: test_net.pkl
+net_file: two_net.pkl
 
 test_prefix:
-  - default
+  - two_6
 
 test_destination:
   - -gneE0-2
@@ -39,7 +45,7 @@ test_destination:
   - gneE2-2
   - gneE6-2
 
-test_net_file: test_net.pkl
+test_net_file: two_net.pkl
 
 input_cells_name:
   - "gneE0-0"

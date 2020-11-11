@@ -15,7 +15,7 @@ temporal_length: 16
 sim_step: 0.1
 delteT: 5
 
-name: only_two_GRU_GCN
+name: normalized
 
 prefix:
   - two_1
@@ -25,7 +25,7 @@ prefix:
   - two_5
 
 destination:
-  - -genE0-2
+  - -gneE0-2
   - gneE3-2
   - gneE4-2
   - gneE5-2
@@ -38,7 +38,7 @@ test_prefix:
   - two_6
 
 test_destination:
-  - -genE0-2
+  - -gneE0-2
   - gneE3-2
   - gneE4-2
   - gneE5-2

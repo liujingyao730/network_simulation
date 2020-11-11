@@ -121,9 +121,10 @@ class network_data(object):
 
         for i in range(self.N):
             for dest in self.destination:
-                j = self.dest_index[dest]
+                j = self.cell_index[dest]
+                dest_index = self.dest_index[dest]
                 try:
-                    self.network_feature[i][j] += nx.dijkstra_path_length(
+                    self.network_feature[i][dest_index] += nx.dijkstra_path_length(
                         G, source=i, target=j)
                 except nx.exception.NetworkXNoPath:
                     pass
