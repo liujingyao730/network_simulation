@@ -14,6 +14,7 @@ from model import GCN_GRU
 from network import network_data
 import dir_manage as d
 from utils import sparselist_to_tensor
+from loss_function import non_negative_loss
 
 
 def run_epoch(args, model, loss_function, optimizer, meter, sample_rate):
@@ -176,11 +177,13 @@ def train(args):
 
     model = GCN_GRU(args)
 
-    loss_function = torch.nn.MSELoss()
+    train_loss_function = non_negative_loss()
+    test_loss_function = torch.nn.MSELoss()
 
     if args["use_cuda"]:
         model = model.cuda()
-        loss_function = loss_function.cuda()
+        test_loss_function = test_loss_function.cuda()
+        train_loss_function = train_loss_function.cuda()
     
     optimizer = torch.optim.Adagrad(model.parameters(), weight_decay=args["weight_decay"])
 
@@ -200,7 +203,7 @@ def train(args):
 
         start = time.time()
 
-        meter = run_epoch(args, model, loss_function, optimizer, meter, sample_rate)
+        meter = run_epoch(args, model, train_loss_function, optimizer, meter, sample_rate)
 
         end1 = time.time()
 
@@ -212,7 +215,7 @@ def train(args):
         meter.reset()
         model.eval()
 
-        meter = test_epoch(args, model, loss_function, meter)
+        meter = test_epoch(args, model, test_loss_function, meter)
 
         end2 = time.time()
 
