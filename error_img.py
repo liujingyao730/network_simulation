@@ -16,14 +16,14 @@ basic_conf = os.path.join(d.config_data_path, "default.yaml")
 with open(basic_conf, 'rb') as f:
     args = yaml.load(f, Loader=yaml.FullLoader)
 
-args["prefix"] = "two_12"
+args["prefix"] = "two_6"
 
 args["init_length"] = 4
 args["temporal_length"] = 1400
 args["batch_size"] = 1
 args["net_file"] = "two_net.pkl"
-args["model_prefix"] = "more_test"
-args["model"] = "49"
+args["model_prefix"] = "normalized"
+args["model"] = "17"
 
 show_time = 50
 
@@ -31,7 +31,7 @@ with open(os.path.join(d.cell_data_path, args["net_file"]), 'rb') as f:
     net_information = pickle.load(f)
 
 data_set = network_data(net_information, args["destination"], args["prefix"], args)
-# data_set.normalize_data()
+data_set.normalize_data()
 
 inputs, target, adj_list = data_set.get_batch()
 
@@ -54,6 +54,9 @@ cell_index = data_set.name_to_id(args["input_cells_name"])
 model.set_input_cells(cell_index)
 
 output = model.infer(inputs, adj_list)
+
+target = data_set.recovery_data(target)
+output = data_set.recovery_data(output)
 
 output = torch.sum(output, dim=3).detach().cpu().numpy()[0, :, :]
 target = torch.sum(target[:, :, :, :args["output_size"]], dim=3).detach().cpu().numpy()[0, :, :]
