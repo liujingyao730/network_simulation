@@ -1,5 +1,6 @@
 import numpy as np
 import scipy.sparse as sp
+import torch
 
 def sparselist_to_tensor(adj_list):
 
@@ -17,3 +18,11 @@ def normalize_adj(adj):
     d_inv_sqrt[np.isinf(d_inv_sqrt)] = 0.
     d_mat_inv_sqrt = sp.diags(d_inv_sqrt)
     return adj.dot(d_mat_inv_sqrt).transpose().dot(d_mat_inv_sqrt).tocoo()
+
+def adj_to_laplace(adj_list):
+
+    D_tilde = torch.diag_embed(torch.pow(torch.sum(adj_list, dim=1), -1 / 2))
+    laplace = torch.einsum("tbc,tcd->tbd", D_tilde, adj_list)
+    laplace = torch.einsum("tbc,tcd->tbd", laplace, D_tilde)
+
+    return laplace
