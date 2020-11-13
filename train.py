@@ -14,7 +14,7 @@ from model import GCN_GRU
 from network import network_data
 import dir_manage as d
 from utils import sparselist_to_tensor
-from loss_function import non_negative_loss
+from loss_function import non_negative_loss, narrow_output_loss
 
 
 def run_epoch(args, model, loss_function, optimizer, meter, sample_rate):
@@ -177,7 +177,7 @@ def train(args):
 
     model = GCN_GRU(args)
 
-    train_loss_function = non_negative_loss()
+    train_loss_function = narrow_output_loss(40)
     test_loss_function = torch.nn.MSELoss()
 
     if args["use_cuda"]:
