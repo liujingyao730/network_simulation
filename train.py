@@ -10,7 +10,7 @@ import random
 import time
 import argparse
 
-from model import GCN_GRU
+from model import GCN_GRU, node_encode_attention
 from network import network_data
 import dir_manage as d
 from utils import sparselist_to_tensor
@@ -175,7 +175,8 @@ def train(args):
         print(key, " ", args[key])
         log_file.write(key+"  "+str(args[key])+'\n')
 
-    model = GCN_GRU(args)
+    # model = GCN_GRU(args)
+    model = node_encode_attention(args)
 
     train_loss_function = narrow_output_loss(40)
     test_loss_function = torch.nn.MSELoss()

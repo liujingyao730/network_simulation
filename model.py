@@ -46,15 +46,6 @@ class GCN_GRU(nn.Module):
 
         self.output_layer = nn.Linear(self.hidden_size, self.output_size)
 
-    def adj_to_laplace(self, adj_list):
-
-        D_tilde = torch.diag_embed(
-            torch.pow(torch.sum(adj_list, dim=1), -1 / 2))
-        laplace = torch.einsum("tbc,tcd->tbd", D_tilde, adj_list)
-        laplace = torch.einsum("tbc,tcd->tbd", laplace, D_tilde)
-
-        return laplace
-
     def forward(self, input_data, adj_list):
 
         batch, temporal, cell, feature = input_data.shape
@@ -66,8 +57,8 @@ class GCN_GRU(nn.Module):
             input_data.data.new(batch, temporal - self.init_length, cell,
                                 self.output_size).fill_(0).float())
 
-        laplace_list_forward = self.adj_to_laplace(adj_list)
-        laplace_list_backward = self.adj_to_laplace(
+        laplace_list_forward = adj_to_laplace(adj_list)
+        laplace_list_backward = adj_to_laplace(
             torch.transpose(adj_list, 1, 2))
 
         hidden = self.init_graph(input_data[:, 0, :, :],
@@ -111,8 +102,8 @@ class GCN_GRU(nn.Module):
             input_data.data.new(batch, temporal - self.init_length, cell,
                                 self.output_size).fill_(0).float())
 
-        laplace_list_forward = self.adj_to_laplace(adj_list)
-        laplace_list_backward = self.adj_to_laplace(
+        laplace_list_forward = adj_to_laplace(adj_list)
+        laplace_list_backward = adj_to_laplace(
             torch.transpose(adj_list, 1, 2))
 
         hidden = self.init_graph(input_data[:, 0, :, :],
@@ -197,12 +188,12 @@ class node_encode_attention(nn.Module):
             node_encode = self.node_encoder(input_data[:, i, :, self.dest_size:], laplace_list_forward[i, :, :])
             node_alpha = self.softmax(node_encode)
 
-            tmp_input = torch.dot(node_alpha, input_data[:, i, :, :self.dest_size])
+            tmp_input = node_alpha.mul(input_data[:, i, :, :self.dest_size])
 
             forward_h = self.forward_gnn(tmp_input, laplace_list_forward[i, :, :])
             backward_h = self.backward_gnn(tmp_input, laplace_list_backward[i, :, :])
 
-            h_space = self.sptial_merge(torch.cat(forward_h, backward_h), dim=2)
+            h_space = self.sptial_merge(torch.cat((forward_h, backward_h), dim=2))
 
             hidden = self.temporal_cell(
                 torch.reshape(tmp_input, (batch * cell, self.dest_size)),
@@ -236,12 +227,13 @@ class node_encode_attention(nn.Module):
 
             node_encode = self.node_encoder(inputs[:, :, self.dest_size:], laplace_list_forward[i, :, :])
             node_alpha = self.softmax(node_encode)
-            tmp_input = torch.dot(node_alpha, inputs[:, :, :self.dest_size])
+            tmp_input = node_alpha.mul(inputs[:, :, :self.dest_size])
+            inputs = inputs * 0
 
             forward_h = self.forward_gnn(tmp_input, laplace_list_forward[i, :, :])
             backward_h = self.backward_gnn(tmp_input, laplace_list_backward[i, :, :])
 
-            h_space = self.sptial_merge(torch.cat(forward_h, backward_h), dim=2)
+            h_space = self.sptial_merge(torch.cat((forward_h, backward_h), dim=2))
 
             hidden = self.temporal_cell(
                 torch.reshape(tmp_input, (batch * cell, self.dest_size)),
@@ -255,12 +247,14 @@ class node_encode_attention(nn.Module):
                 output[:, i - self.init_length, self.input_cells, :] += input_data[:, i, self.input_cells, :self.dest_size]
                 
                 if i < temporal - 1:
-                    inputs[:, :, :self.dest_size] = output[:, i - self.init_length, :, :]
-                    inputs[:, :, self.dest_size:] = input_data[:, i+1, :, self.output_size:]
+                    inputs[:, :, :self.dest_size] += output[:, i - self.init_length, :, :]
+                    inputs[:, :, self.dest_size:] += input_data[:, i+1, :, self.dest_size:]
             
             else:
 
-                inputs = input_data[:, i+1, :, :]
+                inputs += input_data[:, i+1, :, :]
+
+        return output
 
 if __name__ == "__main__":
 
@@ -268,8 +262,8 @@ if __name__ == "__main__":
     args["input_size"] = 13
     args["output_size"] = 6
 
-    input_data = torch.rand(17, 8, 40, 13)
-    adj_list = torch.rand(8, 40, 40)
+    input_data = Variable(torch.rand(17, 8, 40, 13))
+    adj_list = Variable(torch.rand(8, 40, 40))
 
     model = node_encode_attention(args)
     model.set_input_cells([0, 1, 2, 3])

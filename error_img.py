@@ -19,11 +19,11 @@ with open(basic_conf, 'rb') as f:
 args["prefix"] = "two_6"
 
 args["init_length"] = 4
-args["temporal_length"] = 1400
+args["temporal_length"] = 60
 args["batch_size"] = 1
 args["net_file"] = "two_net.pkl"
-args["model_prefix"] = "normalized"
-args["model"] = "17"
+args["model_prefix"] = "GRU_GCN"
+args["model"] = "9"
 
 show_time = 50
 
@@ -84,3 +84,14 @@ for img_name in file_list:
     frames.append(imageio.imread(img_name))
 
 imageio.mimsave("outputs.gif", frames, 'GIF', duration=0.2)
+
+file_list = []
+for i in range(show_time):
+    file_list.append(os.path.join(d.pic_path, str(i)+'_error.png'))
+    data_set.show_adj(origin_adj[i], file=file_list[i], colors=target[i, :] - output[i, :], with_label=True)
+
+frames = []
+for img_name in file_list:
+    frames.append(imageio.imread(img_name))
+
+imageio.mimsave("errors.gif", frames, 'GIF', duration=0.2)

@@ -17,18 +17,18 @@ with open(basic_conf, 'rb') as f:
 
 args["prefix"] = "two_6"
 
-args["init_length"] = 8
+args["init_length"] = 4
 args["temporal_length"] = 1400
 args["batch_size"] = 1
 args["net_file"] = "two_net.pkl"
-args["model_prefix"] = "normalized_long_init"
-args["model"] = "49"
+args["model_prefix"] = "GRU_GCN"
+args["model"] = "9"
 
 with open(os.path.join(d.cell_data_path, args["net_file"]), 'rb') as f:
     net_information = pickle.load(f)
 
 data_set = network_data(net_information, args["destination"], args["prefix"], args)
-data_set.normalize_data()
+# data_set.normalize_data()
 
 inputs, target, adj_list = data_set.get_batch()
 
@@ -54,8 +54,8 @@ model.set_input_cells(cell_index)
 
 output = model.infer(inputs, adj_list)
 
-target = data_set.recovery_data(target)
-output = data_set.recovery_data(output)
+# target = data_set.recovery_data(target)
+# output = data_set.recovery_data(output)
 
 f = torch.nn.MSELoss()
 output = torch.sum(output, dim=3)
