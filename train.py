@@ -61,7 +61,7 @@ def run_epoch(args, model, loss_function, optimizer, meter, sample_rate):
 
             adj_list = Variable(torch.Tensor(sparselist_to_tensor(adj_list)))
             inputs = Variable(torch.Tensor(data))
-            targets = inputs[:, args["init_length"]:, :, :]
+            targets = inputs[:, args["init_length"]+1:, :, :]
 
             if use_cuda:
                 adj_list = adj_list.cuda()
@@ -132,7 +132,7 @@ def test_epoch(args, model, loss_function, meter):
 
             adj_list = torch.Tensor(sparselist_to_tensor(adj_list))
             inputs = torch.Tensor(inputs)
-            targets = inputs[:, args["init_length"]:, :, :]
+            targets = inputs[:, args["init_length"]+1:, :, :]
  
             if use_cuda:
                 adj_list = adj_list.cuda()

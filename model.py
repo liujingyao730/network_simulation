@@ -178,7 +178,7 @@ class node_encode_attention(nn.Module):
         assert feature == self.input_size
         assert temporal - 1 > self.init_length
 
-        output = Variable(input_data.data.new(batch, temporal - self.init_length, cell, self.dest_size).fill_(0).float())
+        output = Variable(input_data.data.new(batch, temporal - self.init_length - 1, cell, self.dest_size).fill_(0).float())
 
         laplace_list_forward = adj_to_laplace(adj_list)
         laplace_list_backward = adj_to_laplace(torch.transpose(adj_list, 1, 2))
@@ -202,7 +202,7 @@ class node_encode_attention(nn.Module):
             hidden = hidden.view(batch, cell, self.hidden_size)
 
             if i >= self.init_length:
-                output[:, i-self.init_length, :, :] += self.output_layer(hidden) + input_data[:, i, :, :self.dest_size]
+                output[:, i-self.init_length, :, :] += self.output_layer(hidden)
         
         return output
     
@@ -216,7 +216,7 @@ class node_encode_attention(nn.Module):
 
         predict_cells = [i for i in range(cell) if i not in self.input_cells]
 
-        output = Variable(input_data.data.new(batch, temporal - self.init_length, cell, self.dest_size).fill_(0).float())
+        output = Variable(input_data.data.new(batch, temporal - self.init_length - 1, cell, self.dest_size).fill_(0).float())
 
         laplace_list_forward = adj_to_laplace(adj_list)
         laplace_list_backward = adj_to_laplace(torch.transpose(adj_list, 1, 2))
@@ -243,7 +243,7 @@ class node_encode_attention(nn.Module):
 
             if i >= self.init_length:
 
-                output[:, i - self.init_length, predict_cells, :] += self.output_layer(hidden[:, predict_cells, :]) + inputs[:, predict_cells, :self.dest_size]
+                output[:, i - self.init_length, predict_cells, :] += self.output_layer(hidden[:, predict_cells, :])
                 output[:, i - self.init_length, self.input_cells, :] += input_data[:, i+1, self.input_cells, :self.dest_size]
                 
                 if i < temporal - 1:
