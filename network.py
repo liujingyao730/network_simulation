@@ -34,7 +34,7 @@ class network_data(object):
         self.step = int(self.deltaT / self.sim_step)
 
         self.dest_size = len(self.destination)
-        self.input_size = self.dest_size + 1  # 目的地数目加上通行时间间隔
+        self.input_size = self.dest_size + 2  # 目的地数目加上通行时间间隔，再加上这个节点是否为流出节点
 
         self.cell_list = []
         for edge in self.ordinary_cell:
@@ -117,12 +117,14 @@ class network_data(object):
         G.add_edges_from(edges)
 
         self.network_feature = np.zeros((self.N, self.input_size)) - 1
-        self.network_feature[:, -1] = 100
+        self.network_feature[:, self.dest_size] = 100
+        dest_cells = []
 
         for i in range(self.N):
             for dest in self.destination:
                 j = self.cell_index[dest]
                 dest_index = self.dest_index[dest]
+                dest_cells.append(j)
                 try:
                     self.network_feature[i][dest_index] += nx.dijkstra_path_length(
                         G, source=i, target=j)
@@ -132,6 +134,7 @@ class network_data(object):
         self.network_feature = self.network_feature[None, :, :]
         junction_input = [self.cell_index[cell] for cell in self.signal_connection.keys()]
         self.network_feature[:, junction_input, self.dest_size] = -1
+        self.network_feature[:, dest_cells, self.dest_size+1] = 1
 
     def generate_all_adj(self):
 

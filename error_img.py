@@ -88,7 +88,7 @@ imageio.mimsave("outputs.gif", frames, 'GIF', duration=0.2)
 file_list = []
 for i in range(show_time):
     file_list.append(os.path.join(d.pic_path, str(i)+'_error.png'))
-    data_set.show_adj(origin_adj[i], file=file_list[i], colors=target[i, :] - output[i, :], with_label=True)
+    data_set.show_adj(origin_adj[i], file=file_list[i], colors=np.round(target[i, :] - output[i, :], decimals=2), with_label=True)
 
 frames = []
 for img_name in file_list:
