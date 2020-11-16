@@ -1,4 +1,4 @@
-input_size: 13
+input_size: 14
 hidden_size: 64
 output_size: 6
 

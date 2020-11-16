@@ -202,7 +202,7 @@ class node_encode_attention(nn.Module):
             hidden = hidden.view(batch, cell, self.hidden_size)
 
             if i >= self.init_length:
-                output[:, i-self.init_length, :, :] += self.output_layer(hidden)
+                output[:, i-self.init_length, :, :] += self.output_layer(hidden) + input_data[:, i, :, :self.dest_size]
         
         return output
     
@@ -243,8 +243,8 @@ class node_encode_attention(nn.Module):
 
             if i >= self.init_length:
 
-                output[:, i - self.init_length, predict_cells, :] += self.output_layer(hidden[:, predict_cells, :])
-                output[:, i - self.init_length, self.input_cells, :] += input_data[:, i, self.input_cells, :self.dest_size]
+                output[:, i - self.init_length, predict_cells, :] += self.output_layer(hidden[:, predict_cells, :]) + inputs[:, predict_cells, :self.dest_size]
+                output[:, i - self.init_length, self.input_cells, :] += input_data[:, i+1, self.input_cells, :self.dest_size]
                 
                 if i < temporal - 1:
                     inputs[:, :, :self.dest_size] += output[:, i - self.init_length, :, :]
