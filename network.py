@@ -213,27 +213,18 @@ class network_data(object):
 
     def get_item(self, point):
 
-        input_time = [
-            point + i * self.step for i in range(self.temporal_length)
-        ]
-        output_time = [
-            point + (i + self.init_length+1) * self.step
-            for i in range(self.temporal_length - self.init_length)
+        time_list = [
+            point + i * self.step for i in range(self.temporal_length+1)
         ]
 
-        cycle_input_time = [
-            (point + i * self.step) % self.cycle_step for i in range(self.temporal_length)
-        ]
-        cycle_output_time = [
-            (point + (i + self.init_length+1) * self.step) % self.cycle_step for i in range(self.temporal_length - self.init_length)
+        cycle_time_list = [
+            (point + i * self.step) % self.cycle_step for i in range(self.temporal_length+1)
         ]
 
-        input_data = np.concatenate(
-            (self.data[input_time, :, :], self.network_feature[cycle_input_time, :, :]), axis=2)
-        output_data = np.concatenate(
-            (self.data[output_time, :, :], self.network_feature[cycle_output_time, :, :]), axis=2)
+        data = np.concatenate(
+            (self.data[time_list, :, :], self.network_feature[cycle_time_list, :, :]), axis=2)
 
-        return (input_data, output_data)
+        return data
 
     def get_adj_list(self, point):
 
@@ -263,23 +254,20 @@ class network_data(object):
 
     def get_batch(self):
 
-        input_data, output_data = self.get_item(self.index)
+        input_data = self.get_item(self.index)
         input_datas = input_data[None, :, :, :]
-        output_datas = output_data[None, :, :, :]
 
         for i in range(self.batch_size - 1):
             point = (1 + i) * self.cycle_step
             if point > self.time_bound:
                 break
-            input_data, output_data = self.get_item(point)
+            input_data = self.get_item(point)
             input_datas = np.concatenate(
                 (input_datas, input_data[None, :, :, :]), axis=0)
-            output_datas = np.concatenate(
-                (output_datas, output_data[None, :, :, :]), axis=0)
 
         adj_list = self.get_adj_list(self.index)
 
-        return input_datas, output_datas, adj_list
+        return input_datas, adj_list
     
     def normalize_data(self):
 
@@ -365,7 +353,7 @@ if __name__ == "__main__":
     args["dest_number"] = 6
     start_cell = [cell for cell in route_conf.start_edge.keys()]
     a = network_data(net_information, destiantion, prefix, args)
-    input, output, adj_list = a.get_batch()
+    input, adj_list = a.get_batch()
     for i in range(len(adj_list)):
         a.show_adj(adj_list[i], file=str(i)+'.png')
     b = 1

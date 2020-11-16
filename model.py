@@ -176,14 +176,14 @@ class node_encode_attention(nn.Module):
         batch, temporal, cell, feature = input_data.shape
 
         assert feature == self.input_size
-        assert temporal > self.init_length
+        assert temporal - 1 > self.init_length
 
         output = Variable(input_data.data.new(batch, temporal - self.init_length, cell, self.dest_size).fill_(0).float())
 
         laplace_list_forward = adj_to_laplace(adj_list)
         laplace_list_backward = adj_to_laplace(torch.transpose(adj_list, 1, 2))
 
-        for i in range(temporal):
+        for i in range(temporal - 1):
 
             node_encode = self.node_encoder(input_data[:, i, :, self.dest_size:], laplace_list_forward[i, :, :])
             node_alpha = self.softmax(node_encode)
@@ -211,7 +211,7 @@ class node_encode_attention(nn.Module):
         batch, temporal, cell, feature = input_data.shape
 
         assert feature == self.input_size
-        assert temporal > self.init_length
+        assert temporal - 1 > self.init_length
         assert self.input_cells is not None
 
         predict_cells = [i for i in range(cell) if i not in self.input_cells]
@@ -223,7 +223,7 @@ class node_encode_attention(nn.Module):
 
         inputs = input_data[:, 0, :, :]
 
-        for i in range(temporal):
+        for i in range(temporal - 1):
 
             node_encode = self.node_encoder(inputs[:, :, self.dest_size:], laplace_list_forward[i, :, :])
             node_alpha = self.softmax(node_encode)
