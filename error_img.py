@@ -6,7 +6,7 @@ import yaml
 import matplotlib.pyplot as plt
 import imageio
 
-from model import GCN_GRU
+from model import GCN_GRU, node_encode_attention
 from network import network_data
 import dir_manage as d
 from utils import sparselist_to_tensor
@@ -22,8 +22,8 @@ args["init_length"] = 4
 args["temporal_length"] = 60
 args["batch_size"] = 1
 args["net_file"] = "two_net.pkl"
-args["model_prefix"] = "GRU_GCN"
-args["model"] = "9"
+args["model_prefix"] = "node_encoder"
+args["model"] = "49"
 
 show_time = 50
 
@@ -37,7 +37,8 @@ inputs, target, adj_list = data_set.get_batch()
 
 origin_adj = adj_list.copy()
 
-model = GCN_GRU(args)
+# model = GCN_GRU(args)
+model = node_encode_attention(args)
 model_file = os.path.join(d.log_path, args["model_prefix"], args["model"]+'.tar')
 checkpoint = torch.load(model_file)
 model.load_state_dict(checkpoint["state_dict"])

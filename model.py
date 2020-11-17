@@ -51,10 +51,13 @@ class GCN_GRU(nn.Module):
         batch, temporal, cell, feature = input_data.shape
 
         assert feature == self.input_size
-        assert temporal > self.init_length
+        assert temporal - 1 > self.init_length
+        assert self.input_cells is not None
+
+        predict_cells = [i for i in range(cell) if i not in self.input_cells]
 
         output = Variable(
-            input_data.data.new(batch, temporal - self.init_length, cell,
+            input_data.data.new(batch, temporal - self.init_length - 1, cell,
                                 self.output_size).fill_(0).float())
 
         laplace_list_forward = adj_to_laplace(adj_list)
@@ -64,7 +67,7 @@ class GCN_GRU(nn.Module):
         hidden = self.init_graph(input_data[:, 0, :, :],
                                  laplace_list_forward[0, :, :])
 
-        for i in range(temporal):
+        for i in range(temporal-1):
 
             forward_h = self.forward_gnn(hidden, laplace_list_forward[i, :, :])
             backwad_h = self.backward_gnn(hidden,
@@ -77,10 +80,11 @@ class GCN_GRU(nn.Module):
                 torch.reshape(input_data[:, i, :, :], (batch * cell, feature)),
                 torch.reshape(h_space, (batch * cell, self.hidden_size)))
             hidden = hidden.view(batch, cell, self.hidden_size)
+            
             if i >= self.init_length:
 
-                output[:,
-                       i - self.init_length, :, :] += self.output_layer(hidden)
+                output[:, i-self.init_length, predict_cells, :] += self.output_layer(hidden[:, predict_cells, :])
+                output[:, i-self.init_length, self.input_cells, :] += input_data[:, i+1, self.input_cells, :self.output_size]
 
         return output
 
@@ -93,13 +97,13 @@ class GCN_GRU(nn.Module):
         batch, temporal, cell, feature = input_data.shape
 
         assert feature == self.input_size
-        assert temporal > self.init_length
+        assert temporal - 1 > self.init_length
         assert self.input_cells is not None
 
         predict_cells = [i for i in range(cell) if i not in self.input_cells]
 
         output = Variable(
-            input_data.data.new(batch, temporal - self.init_length, cell,
+            input_data.data.new(batch, temporal - self.init_length - 1, cell,
                                 self.output_size).fill_(0).float())
 
         laplace_list_forward = adj_to_laplace(adj_list)
@@ -111,7 +115,7 @@ class GCN_GRU(nn.Module):
 
         inputs = input_data[:, 0, :, :]
 
-        for i in range(temporal):
+        for i in range(temporal - 1):
 
             forward_h = self.forward_gnn(hidden, laplace_list_forward[i, :, :])
             backwad_h = self.backward_gnn(hidden,
@@ -153,8 +157,9 @@ class node_encode_attention(nn.Module):
 
         self.gnn_type = args.get("gnn", "gcn")
         if self.gnn_type == "gcn":
-            self.forward_gnn = gcn(self.dest_size, self.hidden_size)
-            self.backward_gnn = gcn(self.dest_size, self.hidden_size)
+            self.init_graph = gcn(self.input_size, self.hidden_size)
+            self.forward_gnn = gcn(self.hidden_size, self.hidden_size)
+            self.backward_gnn = gcn(self.hidden_size, self.hidden_size)
             self.node_encoder = gcn(self.input_size - self.dest_size, self.dest_size)
         else:
             raise NotImplementedError
@@ -177,11 +182,16 @@ class node_encode_attention(nn.Module):
 
         assert feature == self.input_size
         assert temporal - 1 > self.init_length
+        assert self.input_cells is not None
+
+        predict_cells = [i for i in range(cell) if i not in self.input_cells]
 
         output = Variable(input_data.data.new(batch, temporal - self.init_length - 1, cell, self.dest_size).fill_(0).float())
 
         laplace_list_forward = adj_to_laplace(adj_list)
         laplace_list_backward = adj_to_laplace(torch.transpose(adj_list, 1, 2))
+
+        hidden = self.init_graph(input_data[:, 0, :, :], laplace_list_forward[0, :, :])
 
         for i in range(temporal - 1):
 
@@ -190,8 +200,8 @@ class node_encode_attention(nn.Module):
 
             tmp_input = node_alpha.mul(input_data[:, i, :, :self.dest_size])
 
-            forward_h = self.forward_gnn(tmp_input, laplace_list_forward[i, :, :])
-            backward_h = self.backward_gnn(tmp_input, laplace_list_backward[i, :, :])
+            forward_h = self.forward_gnn(hidden, laplace_list_forward[i, :, :])
+            backward_h = self.backward_gnn(hidden, laplace_list_backward[i, :, :])
 
             h_space = self.sptial_merge(torch.cat((forward_h, backward_h), dim=2))
 
@@ -202,7 +212,8 @@ class node_encode_attention(nn.Module):
             hidden = hidden.view(batch, cell, self.hidden_size)
 
             if i >= self.init_length:
-                output[:, i-self.init_length, :, :] += self.output_layer(hidden)
+                output[:, i-self.init_length, predict_cells, :] += self.output_layer(hidden[:, predict_cells, :])
+                output[:, i-self.init_length, self.input_cells, :] += input_data[:, i+1, self.input_cells, :self.dest_size]
         
         return output
     
@@ -221,6 +232,8 @@ class node_encode_attention(nn.Module):
         laplace_list_forward = adj_to_laplace(adj_list)
         laplace_list_backward = adj_to_laplace(torch.transpose(adj_list, 1, 2))
 
+        hidden = self.init_graph(input_data[:, 0, :, :], laplace_list_forward[0, :, :])
+
         inputs = input_data[:, 0, :, :]
 
         for i in range(temporal - 1):
@@ -230,8 +243,8 @@ class node_encode_attention(nn.Module):
             tmp_input = node_alpha.mul(inputs[:, :, :self.dest_size])
             inputs = inputs * 0
 
-            forward_h = self.forward_gnn(tmp_input, laplace_list_forward[i, :, :])
-            backward_h = self.backward_gnn(tmp_input, laplace_list_backward[i, :, :])
+            forward_h = self.forward_gnn(hidden, laplace_list_forward[i, :, :])
+            backward_h = self.backward_gnn(hidden, laplace_list_backward[i, :, :])
 
             h_space = self.sptial_merge(torch.cat((forward_h, backward_h), dim=2))
 
