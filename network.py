@@ -126,7 +126,7 @@ class network_data(object):
                 dest_index = self.dest_index[dest]
                 dest_cells.append(j)
                 try:
-                    self.network_feature[i][dest_index] += nx.dijkstra_path_length(
+                    self.network_feature[i][dest_index] = nx.dijkstra_path_length(
                         G, source=i, target=j)
                 except nx.exception.NetworkXNoPath:
                     pass
