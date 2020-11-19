@@ -312,8 +312,10 @@ class network_data(object):
 
         if network_type == "two":
             pos = draw_utils.two_net_pos
+            figure_size = (8, 6)
         elif network_type == "three":
-            raise NotImplementedError
+            pos = draw_utils.three_net_pos
+            figure_size = (12, 6)
         elif network_type == "four":
             raise NotImplementedError
         else:
@@ -328,13 +330,15 @@ class network_data(object):
         N = nx.path_graph(self.N)
         G.add_nodes_from(N)
         G.add_edges_from(edges)
- 
+
+        plt.figure(figsize=figure_size)
         nx.draw(G,pos, node_color=colors, edge_color='red', node_size=400, alpha=0.5)
         if with_label:
             labels = {i:colors[i] for i in range(len(colors))}
             nx.draw_networkx_labels(G, pos, labels=labels)
         plt.savefig(file)
         plt.cla()
+        plt.close('all')
 
 if __name__ == "__main__":
 

@@ -11,21 +11,14 @@ from network import network_data
 import dir_manage as d
 from utils import sparselist_to_tensor
 
-basic_conf = os.path.join(d.config_data_path, "default.yaml")
+basic_conf = os.path.join(d.config_data_path, "three_test.yaml")
 
 with open(basic_conf, 'rb') as f:
     args = yaml.load(f, Loader=yaml.FullLoader)
 
-args["prefix"] = "two_6"
+net_type = "three"
 
-args["init_length"] = 4
-args["temporal_length"] = 60
-args["batch_size"] = 1
-args["net_file"] = "two_net.pkl"
-args["model_prefix"] = "node_encoder"
-args["model"] = "49"
-
-show_time = 50
+show_time = 100
 
 with open(os.path.join(d.cell_data_path, args["net_file"]), 'rb') as f:
     net_information = pickle.load(f)
@@ -33,13 +26,14 @@ with open(os.path.join(d.cell_data_path, args["net_file"]), 'rb') as f:
 data_set = network_data(net_information, args["destination"], args["prefix"], args)
 data_set.normalize_data()
 
-inputs, target, adj_list = data_set.get_batch()
+inputs, adj_list = data_set.get_batch()
+target = inputs[:, args["init_length"]+1:, :, :]
 
 origin_adj = adj_list.copy()
 
 # model = GCN_GRU(args)
 model = node_encode_attention(args)
-model_file = os.path.join(d.log_path, args["model_prefix"], args["model"]+'.tar')
+model_file = os.path.join(d.log_path, args["model_prefix"], str(args["model"])+'.tar')
 checkpoint = torch.load(model_file)
 model.load_state_dict(checkpoint["state_dict"])
 
@@ -62,12 +56,13 @@ output = data_set.recovery_data(output)
 output = torch.sum(output, dim=3).detach().cpu().numpy()[0, :, :]
 target = torch.sum(target[:, :, :, :args["output_size"]], dim=3).detach().cpu().numpy()[0, :, :]
 
+target = np.around(target, decimals=2)
 output = np.around(output, decimals=2)
 
 file_list = []
 for i in range(show_time):
     file_list.append(os.path.join(d.pic_path, str(i)+'.png'))
-    data_set.show_adj(origin_adj[i], file=file_list[i], colors=target[i, :], with_label=True)
+    data_set.show_adj(origin_adj[i-args["init_length"]], file=file_list[i], colors=target[i, :], with_label=True, network_type=net_type)
 
 frames = []
 for img_name in file_list:
@@ -78,7 +73,7 @@ imageio.mimsave("targets.gif", frames, 'GIF', duration=0.2)
 file_list = []
 for i in range(show_time):
     file_list.append(os.path.join(d.pic_path, str(i)+'_out.png'))
-    data_set.show_adj(origin_adj[i], file=file_list[i], colors=output[i, :], with_label=True)
+    data_set.show_adj(origin_adj[i-args["init_length"]], file=file_list[i], colors=output[i, :], with_label=True, network_type=net_type)
 
 frames = []
 for img_name in file_list:
@@ -89,7 +84,7 @@ imageio.mimsave("outputs.gif", frames, 'GIF', duration=0.2)
 file_list = []
 for i in range(show_time):
     file_list.append(os.path.join(d.pic_path, str(i)+'_error.png'))
-    data_set.show_adj(origin_adj[i], file=file_list[i], colors=np.round(target[i, :] - output[i, :], decimals=2), with_label=True)
+    data_set.show_adj(origin_adj[i-args["init_length"]], file=file_list[i], colors=np.round(target[i, :] - output[i, :], decimals=2), with_label=True, network_type=net_type)
 
 frames = []
 for img_name in file_list:

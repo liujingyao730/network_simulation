@@ -5,24 +5,15 @@ import os
 import yaml
 import matplotlib.pyplot as plt
 
-from model import GCN_GRU
+from model import GCN_GRU, node_encode_attention
 from network import network_data
 import dir_manage as d
 from utils import sparselist_to_tensor
 
-basic_conf = os.path.join(d.config_data_path, "default.yaml")
+basic_conf = os.path.join(d.config_data_path, "three_test.yaml")
 
 with open(basic_conf, 'rb') as f:
     args = yaml.load(f, Loader=yaml.FullLoader)
-
-args["prefix"] = "two_6"
-
-args["init_length"] = 4
-args["temporal_length"] = 1400
-args["batch_size"] = 1
-args["net_file"] = "two_net.pkl"
-args["model_prefix"] = "GRU_GCN"
-args["model"] = "9"
 
 with open(os.path.join(d.cell_data_path, args["net_file"]), 'rb') as f:
     net_information = pickle.load(f)
@@ -30,14 +21,16 @@ with open(os.path.join(d.cell_data_path, args["net_file"]), 'rb') as f:
 data_set = network_data(net_information, args["destination"], args["prefix"], args)
 # data_set.normalize_data()
 
-inputs, target, adj_list = data_set.get_batch()
+inputs, adj_list = data_set.get_batch()
+target = inputs[:, args["init_length"]+1:, :, :]
 
 '''
 for i in range(len(adj_list)):
-    data_set.show_adj(adj_list[i])
+    data_set.show_adj(adj_list[i], network_type=net_type, with_label=True, colors=target[0, i, :, -1])
 '''
-model = GCN_GRU(args)
-model_file = os.path.join(d.log_path, args["model_prefix"], args["model"]+'.tar')
+# model = GCN_GRU(args)
+model = node_encode_attention(args)
+model_file = os.path.join(d.log_path, args["model_prefix"], str(args["model"])+'.tar')
 checkpoint = torch.load(model_file)
 model.load_state_dict(checkpoint["state_dict"])
 
@@ -64,8 +57,8 @@ target = torch.sum(target[:, :, :, :args["output_size"]], dim=3)
 print(f(output, target))
 print(f(output[:, -1, :], target[:, -1, :]))
 
-real_cell = target[0, :, :].detach().cpu().numpy().sum(1)[:100]
-predict_cell = output[0, :, :].detach().cpu().numpy().sum(1)[:100]
+real_cell = target[0, :, :].detach().cpu().numpy().sum(1)[:200]
+predict_cell = output[0, :, :].detach().cpu().numpy().sum(1)[:200]
 x = np.array(range(real_cell.shape[0]))
 
 plt.figure()
