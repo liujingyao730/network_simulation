@@ -160,14 +160,15 @@ class node_encode_attention(nn.Module):
             self.init_graph = gcn(self.input_size, self.hidden_size)
             self.forward_gnn = gcn(self.hidden_size, self.hidden_size)
             self.backward_gnn = gcn(self.hidden_size, self.hidden_size)
-            self.node_encoder = gcn(self.input_size - self.dest_size, self.dest_size)
+            self.node_encoder_forward = gcn(self.input_size - self.dest_size, self.dest_size)
+            self.node_encoder_backward = gcn(self.input_size - self.dest_size, self.dest_size)
         else:
             raise NotImplementedError
         self.sptial_merge = nn.Linear(2*self.hidden_size, self.hidden_size)
             
         self.rnn_type = args.get("rnn", "gru")
         if self.rnn_type == "gru":
-            self.temporal_cell = nn.GRUCell(self.dest_size, self.hidden_size)
+            self.temporal_cell = nn.GRUCell(2 * self.dest_size, self.hidden_size)
         
         self.output_layer = nn.Linear(self.hidden_size, self.dest_size)
         self.softmax = nn.Softmax(dim=2)
@@ -195,10 +196,15 @@ class node_encode_attention(nn.Module):
 
         for i in range(temporal - 1):
 
-            node_encode = self.node_encoder(input_data[:, i, :, self.dest_size:], laplace_list_forward[i, :, :])
-            node_alpha = self.softmax(node_encode)
+            node_encode_forward = self.node_encoder_forward(input_data[:, i, :, self.dest_size:], laplace_list_forward[i, :, :])
+            node_alpha_forward = self.softmax(node_encode_forward)
+            tmp_input_forward = node_alpha_forward.mul(input_data[:, i, :, :self.dest_size])
 
-            tmp_input = node_alpha.mul(input_data[:, i, :, :self.dest_size])
+            node_encode_backward = self.node_encoder_backward(input_data[:, i, :, self.dest_size:], laplace_list_backward[i, :, :])
+            node_alpha_backward = self.softmax(node_encode_backward)
+            tmp_input_backward = node_alpha_backward.mul(input_data[:, i, :, :self.dest_size])
+
+            tmp_input = torch.cat((tmp_input_forward, tmp_input_backward), axis=2)
 
             forward_h = self.forward_gnn(hidden, laplace_list_forward[i, :, :])
             backward_h = self.backward_gnn(hidden, laplace_list_backward[i, :, :])
@@ -206,7 +212,7 @@ class node_encode_attention(nn.Module):
             h_space = self.sptial_merge(torch.cat((forward_h, backward_h), dim=2))
 
             hidden = self.temporal_cell(
-                torch.reshape(tmp_input, (batch * cell, self.dest_size)),
+                torch.reshape(tmp_input, (batch * cell, 2 * self.dest_size)),
                 torch.reshape(h_space, (batch * cell, self.hidden_size))
             )
             hidden = hidden.view(batch, cell, self.hidden_size)
@@ -238,9 +244,16 @@ class node_encode_attention(nn.Module):
 
         for i in range(temporal - 1):
 
-            node_encode = self.node_encoder(inputs[:, :, self.dest_size:], laplace_list_forward[i, :, :])
-            node_alpha = self.softmax(node_encode)
-            tmp_input = node_alpha.mul(inputs[:, :, :self.dest_size])
+            node_encode_forward = self.node_encoder_forward(input_data[:, i, :, self.dest_size:], laplace_list_forward[i, :, :])
+            node_alpha_forward = self.softmax(node_encode_forward)
+            tmp_input_forward = node_alpha_forward.mul(input_data[:, i, :, :self.dest_size])
+
+            node_encode_backward = self.node_encoder_backward(input_data[:, i, :, self.dest_size:], laplace_list_backward[i, :, :])
+            node_alpha_backward = self.softmax(node_encode_backward)
+            tmp_input_backward = node_alpha_backward.mul(input_data[:, i, :, :self.dest_size])
+
+            tmp_input = torch.cat((tmp_input_forward, tmp_input_backward), axis=2)
+
             inputs = inputs * 0
 
             forward_h = self.forward_gnn(hidden, laplace_list_forward[i, :, :])
@@ -249,7 +262,7 @@ class node_encode_attention(nn.Module):
             h_space = self.sptial_merge(torch.cat((forward_h, backward_h), dim=2))
 
             hidden = self.temporal_cell(
-                torch.reshape(tmp_input, (batch * cell, self.dest_size)),
+                torch.reshape(tmp_input, (batch * cell, 2 * self.dest_size)),
                 torch.reshape(h_space, (batch * cell, self.hidden_size))
             )
             hidden = hidden.view(batch, cell, self.hidden_size)
