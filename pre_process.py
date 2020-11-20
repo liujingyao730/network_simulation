@@ -13,10 +13,6 @@ import pickle
 
 import utils
 
-net_file = "intersection.net.xml"
-fcd_file = "fcd.xml"
-data_fold = "data"
-
 dest1 = pd.DataFrame()
 dest2 = pd.DataFrame()
 dest3 = pd.DataFrame()
@@ -101,6 +97,7 @@ def net_resolve(file, pickle_file):
         former_cell = None
         ordinary_cell[edge]["cell_length"] = cell_length
         ordinary_cell[edge]["cell_id"] = []
+        ordinary_cell[edge]["lane_number"] = len(edge_list[edge])
         for i in range(cell_num):
             cell_id = edge + '-' + str(i)
             ordinary_cell[edge]["cell_id"].append(cell_id)
@@ -290,6 +287,54 @@ def fcd_resolve(fcd_file, net_information, prefix="default"):
 
     save_file(prefix)
 
-net_information = net_resolve(net_file, "two_net.pkl")
-init_dataframe(net_information["ordinary_cell"], net_information["junction_cell"])
-fcd_resolve(fcd_file, net_information)
+def calculate_layout(net_file, pickle_file):
+
+    net_information = net_resolve(net_file, pickle_file)
+
+    ordinary_cell = net_information["ordinary_cell"]
+    cell_list = []
+    for edge in ordinary_cell:
+        cell_list.extend(ordinary_cell[edge]["cell_id"])
+    cell_index = {cell_list[i]: i for i in range(len(cell_list))}
+
+    tree = etree.parse(net_file)
+    root = tree.getroot()
+
+    layout = {}
+
+    for child in root:
+
+        if child.tag == "edge" and child.attrib["id"] in ordinary_cell.keys():
+
+            edge = child.attrib["id"]
+            lane_number = ordinary_cell[edge]["lane_number"]
+            divide_number = len(ordinary_cell[edge]["cell_id"]) + 1
+            x = np.array([0., 0.])
+            y = np.array([0., 0.])
+
+            for lane in child:
+
+                shape = lane.attrib["shape"]
+                points = shape.split(" ")
+                assert len(points) == 2
+                top = points[0].split(",")
+                bottom = points[1].split(",")
+                x += np.array([float(top[0]), float(top[1])])
+                y += np.array([float(bottom[0]), float(bottom[1])])
+            
+            x /= lane_number
+            y /= lane_number
+
+            for i in range(len(ordinary_cell[edge]["cell_id"])):
+                cell = ordinary_cell[edge]["cell_id"][i]
+                index = cell_index[cell]
+                layout[index] = (x + y) * (i + 1) / divide_number
+
+    return layout
+
+net_file = "intersection.net.xml"
+fcd_file = "fcd.xml"
+data_fold = "data"
+pickle_file = "test.xml"
+
+layout = calculate_layout(net_file, pickle_file)
