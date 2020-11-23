@@ -22,7 +22,7 @@ dest6 = pd.DataFrame()
 
 dest = [dest1, dest2, dest3, dest4, dest5, dest6]
 
-def net_resolve(file, pickle_file):
+def net_resolve(net_file, pickle_file):
 
     net_tree = etree.parse(net_file)
     root = net_tree.getroot()
@@ -328,13 +328,14 @@ def calculate_layout(net_file, pickle_file):
             for i in range(len(ordinary_cell[edge]["cell_id"])):
                 cell = ordinary_cell[edge]["cell_id"][i]
                 index = cell_index[cell]
-                layout[index] = (x + y) * (i + 1) / divide_number
+                layout[index] = (y - x) * (i + 1) / divide_number + x
 
     return layout
 
-net_file = "intersection.net.xml"
-fcd_file = "fcd.xml"
-data_fold = "data"
-pickle_file = "test.xml"
+if __name__ == "__main__":
+    net_file = "intersection.net.xml"
+    fcd_file = "fcd.xml"
+    data_fold = "data"
+    pickle_file = "test.xml"
 
-layout = calculate_layout(net_file, pickle_file)
+    layout = calculate_layout(net_file, pickle_file)

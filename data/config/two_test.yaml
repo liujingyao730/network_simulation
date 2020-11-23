@@ -15,11 +15,11 @@ temporal_length: 1400
 sim_step: 0.1
 delteT: 5
 
-model_prefix: new_coder
-model: 49
+model_prefix: new_coder_longer
+model: 30
 batch_size: 1
 
-prefix: two6
+prefix: two_6
 
 destination:
   - -gneE0-2

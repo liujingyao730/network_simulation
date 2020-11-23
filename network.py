@@ -319,7 +319,8 @@ class network_data(object):
         elif network_type == "four":
             raise NotImplementedError
         else:
-            raise NotImplementedError
+            pos = network_type
+            figure_size = (8, 6)
         adj = sparse.coo_matrix(adj)
         row = adj.row
         col = adj.col
@@ -332,7 +333,7 @@ class network_data(object):
         G.add_edges_from(edges)
 
         plt.figure(figsize=figure_size)
-        nx.draw(G,pos, node_color=colors, edge_color='red', node_size=400, alpha=0.5)
+        nx.draw(G,pos, node_color=colors, edge_color='red', alpha=0.5)
         if with_label:
             labels = {i:colors[i] for i in range(len(colors))}
             nx.draw_networkx_labels(G, pos, labels=labels)
