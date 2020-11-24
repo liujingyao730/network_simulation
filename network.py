@@ -34,7 +34,14 @@ class network_data(object):
         self.step = int(self.deltaT / self.sim_step)
 
         self.dest_size = len(self.destination)
-        self.input_size = self.dest_size + 2  # 目的地数目加上通行时间间隔，再加上这个节点是否为流出节点
+        # dest_size + 通行时间 + cell长度 + 车道数 + 是否路口 + 是否终点
+        self.node_feature_size = self.dest_size + 5  
+        self.input_size = self.dest_size + self.node_feature_size
+        self.green_time_loc = self.dest_size
+        self.cell_length_loc = self.dest_size + 1
+        self.lane_number_loc = self.dest_size + 2
+        self.is_junction_loc = self.dest_size + 3
+        self.is_end_loc = self.dest_size + 4
 
         self.cell_list = []
         for edge in self.ordinary_cell:
@@ -116,8 +123,8 @@ class network_data(object):
         G.add_nodes_from(N)
         G.add_edges_from(edges)
 
-        self.network_feature = np.zeros((self.N, self.input_size)) - 1
-        self.network_feature[:, self.dest_size] = 100
+        self.network_feature = np.zeros((self.N, self.node_feature_size)) - 1
+        self.network_feature[:, self.green_time_loc] = 100
         dest_cells = []
 
         for i in range(self.N):
@@ -131,10 +138,17 @@ class network_data(object):
                 except nx.exception.NetworkXNoPath:
                     pass
         
+        for edge in self.ordinary_cell.keys():
+            for cell in self.ordinary_cell[edge]["cell_id"]:
+                cell_id = self.cell_index[cell]
+                self.network_feature[cell_id, self.lane_number_loc] = self.ordinary_cell[edge]["lane_number"]
+                self.network_feature[cell_id, self.cell_length_loc] = self.ordinary_cell[edge]["cell_length"]
+        
         self.network_feature = self.network_feature[None, :, :]
         junction_input = [self.cell_index[cell] for cell in self.signal_connection.keys()]
-        self.network_feature[:, junction_input, self.dest_size] = -1
-        self.network_feature[:, dest_cells, self.dest_size+1] = 1
+        self.network_feature[:, junction_input, self.green_time_loc] = -1
+        self.network_feature[:, junction_input, self.is_junction_loc] = 1
+        self.network_feature[:, dest_cells, self.is_end_loc] = 1
 
     def generate_all_adj(self):
 
@@ -156,7 +170,7 @@ class network_data(object):
                     from_id = self.intervals[junction_id][connect_id][2]
                     if start_time <= time_t < end_time:
                         self.adj_with_time[index] += self.loc_adj[junction_id][connect_id]
-                        self.network_feature[index, from_id, self.dest_size] = end_time - time_t
+                        self.network_feature[index, from_id, self.green_time_loc] = end_time - time_t
 
         # np.save(os.path.join(self.data_fold, self.prefix+'.npy'), self.adj_with_time)
     
@@ -343,7 +357,7 @@ class network_data(object):
 
 if __name__ == "__main__":
 
-    with open("data/input_data/two_net.pkl", 'rb') as f:
+    with open("test.pkl", 'rb') as f:
         net_information = pickle.load(f)
     destiantion = [end + '-2' for end in route_conf.end_edge.keys()]
     prefix = "default"
