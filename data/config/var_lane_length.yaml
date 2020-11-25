@@ -1,0 +1,86 @@
+input_size: 17
+hidden_size: 64
+output_size: 6
+
+use_cuda: True
+num_epochs: 50
+show_every: 100
+weight_decay: 5.e-5
+grad_clip: 10
+sample_rate: 1
+sample_decay: 0.03
+
+init_length: 4
+temporal_length: 24
+sim_step: 0.1
+delteT: 5
+
+name: with_lane_var_lane
+
+prefix: 
+  - mid_high
+  - shorter_high
+  - shorter_low
+  - longer_high
+  - longer_low
+  - shortest_high
+  - shortest_low
+  - longest_high
+  - longest_low
+  - mix1_low
+  - mix2_high
+
+destination:
+  - -gneE4-2
+  - -gneE0-2
+  - gneE5-2
+  - gneE8-2
+  - gneE3-2
+  - gneE9-2
+
+net_file: 
+  - three_mid
+  - three_shorter
+  - three_shorter
+  - three_longer
+  - three_longer
+  - three_shortest
+  - three_shortest
+  - three_longest
+  - three_longest
+  - three_mix1
+  - three_mix2
+
+input_cells_name:
+  - gneE4-0
+  - gneE0-0
+  - -gneE5-0
+  - -gneE8-0
+  - -gneE3-0
+  - -gneE9-0
+
+test_prefix:
+  - mid_low
+  - mix1_high
+  - mix2_low
+
+test_destination:
+  - -gneE4-2
+  - -gneE0-2
+  - gneE5-2
+  - gneE8-2
+  - gneE3-2
+  - gneE9-2
+
+test_net_file:
+  - three_mid
+  - three_mix1
+  - three_mix2
+
+test_input_cells_name:
+  - gneE4-0
+  - gneE0-0
+  - -gneE5-0
+  - -gneE8-0
+  - -gneE3-0
+  - -gneE9-0
