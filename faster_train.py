@@ -216,7 +216,7 @@ def main():
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--config", type=str, default="with_lane_length")
+    parser.add_argument("--config", type=str, default="four_var_train")
 
     args = parser.parse_args()
 

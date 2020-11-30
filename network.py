@@ -375,7 +375,8 @@ class data_on_network(object):
         self.deltaT = args.get("deltaT", 5)
         self.step = int(self.deltaT / self.sim_step)
 
-        self.dest_size = len(self.destination)
+        self.dest_size = args.get("dest_size", 8)
+        assert self.dest_size >= len(self.destination)
         # dest_size + 通行时间 + cell长度 + 车道数 + 是否路口 + 是否终点
         self.node_feature_size = self.dest_size + 5
         self.input_size = self.dest_size + self.node_feature_size
@@ -393,7 +394,7 @@ class data_on_network(object):
         self.cell_index = {self.cell_list[i]: i for i in range(self.N)}
         self.dest_index = {
             self.destination[i]: i
-            for i in range(self.dest_size)
+            for i in range(len(self.destination))
         }
 
         self.generate_base_adj()
@@ -526,21 +527,9 @@ class data_on_network(object):
             
             prefix = self.prefixs[i]
 
-            dest1_file = os.path.join(self.data_fold, prefix + "_dest1.csv")
-            dest2_file = os.path.join(self.data_fold, prefix + "_dest2.csv")
-            dest3_file = os.path.join(self.data_fold, prefix + "_dest3.csv")
-            dest4_file = os.path.join(self.data_fold, prefix + "_dest4.csv")
-            dest5_file = os.path.join(self.data_fold, prefix + "_dest5.csv")
-            dest6_file = os.path.join(self.data_fold, prefix + "_dest6.csv")
+            tmp_data = self.read_prefix(prefix)
 
-            dest1 = pd.read_csv(dest1_file, index_col=0)[self.cell_list].values[:, :, None]
-            dest2 = pd.read_csv(dest2_file, index_col=0)[self.cell_list].values[:, :, None]
-            dest3 = pd.read_csv(dest3_file, index_col=0)[self.cell_list].values[:, :, None]
-            dest4 = pd.read_csv(dest4_file, index_col=0)[self.cell_list].values[:, :, None]
-            dest5 = pd.read_csv(dest5_file, index_col=0)[self.cell_list].values[:, :, None]
-            dest6 = pd.read_csv(dest6_file, index_col=0)[self.cell_list].values[:, :, None]
-
-            self.data.append(np.concatenate((dest1, dest2, dest3, dest4, dest5, dest6), axis=2).astype("float64"))
+            self.data.append(tmp_data.astype("float64"))
 
             if longest_time < self.data[i].shape[0]:
                 shape_loc = i
@@ -559,6 +548,23 @@ class data_on_network(object):
         if self.batch_size is None:
             self.batch_size = self.max_batch_size
         self.index = 0
+    
+    def read_prefix(self, prefix):
+
+        for i in range(len(self.destination)):
+            
+            file = os.path.join(self.data_fold, prefix + "_dest" + str(i+1) + ".csv")
+            tmp = pd.read_csv(file, index_col=0)[self.cell_list].values[:, :, None]
+
+            if i == 0:
+                data = tmp
+            else:
+                data = np.concatenate((data, tmp), axis=2)
+        
+        # 可能destination的数目不足8，用0补齐
+        data = np.pad(data, pad_width=((0, 0), (0, 0), (0, self.dest_size-len(self.destination))), mode="constant")
+
+        return data
 
     def next_index(self):
 
@@ -659,7 +665,7 @@ if __name__ == "__main__":
     with open("test.pkl", 'rb') as f:
         net_information = pickle.load(f)
     destiantion = [end + '-2' for end in route_conf.end_edge.keys()]
-    prefix = "default"
+    prefix = ["default"]
     args = {}
     args["sim_step"] = 0.1
     args["deltaT"] = 5
@@ -670,7 +676,7 @@ if __name__ == "__main__":
     args["use_cuda"] = True
     args["dest_number"] = 6
     start_cell = [cell for cell in route_conf.start_edge.keys()]
-    a = network_data(net_information, destiantion, prefix, args)
+    a = data_on_network(net_information, destiantion, prefix, args)
     input, adj_list = a.get_batch()
     for i in range(len(adj_list)):
         a.show_adj(adj_list[i], file=str(i)+'.png')

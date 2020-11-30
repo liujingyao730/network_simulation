@@ -1,0 +1,127 @@
+input_size: 17
+hidden_size: 64
+output_size: 8
+
+use_cuda: True
+num_epochs: 50
+show_every: 100
+weight_decay: 5.e-5
+grad_clip: 10
+sample_rate: 1
+sample_decay: 0.03
+
+init_length: 4
+temporal_length: 24
+sim_step: 0.1
+delteT: 5
+
+name: four_var
+
+prefix:
+  - 
+    - less_1
+    - less_2
+    - less_3
+    - less_4
+    - less_5
+  - 
+    - more_1
+    - more_2
+    - more_3
+    - more_4
+    - more_5
+
+
+destination:
+  -
+    - gneE4-3
+    - -gneE5-3
+    - -gneE6-3
+    - gneE7-5
+    - gneE8-1
+    - -gneE9-1
+    - gneE11-2
+    - gneE10-2
+  -
+    - gneE4-3
+    - -gneE5-3
+    - -gneE6-3
+    - gneE7-5
+    - gneE8-1
+    - -gneE9-1
+    - gneE11-2
+    - gneE10-2
+
+net_file: 
+  - four_less.pkl
+  - four_more.pkl
+
+input_cells_name:
+  -
+    - -gneE4-0
+    - gneE5-0
+    - gneE6-0
+    - -gneE7-0
+    - -gneE8-0
+    - gneE9-0
+    - -gneE11-0
+    - -gneE10-0
+  -
+    - -gneE4-0
+    - gneE5-0
+    - gneE6-0
+    - -gneE7-0
+    - -gneE8-0
+    - gneE9-0
+    - -gneE11-0
+    - -gneE10-0
+
+test_prefix:
+  -
+    - less_6
+  - 
+    - more_6
+
+test_destination:
+  -
+    - gneE4-3
+    - -gneE5-3
+    - -gneE6-3
+    - gneE7-5
+    - gneE8-1
+    - -gneE9-1
+    - gneE11-2
+    - gneE10-2
+  -
+    - gneE4-3
+    - -gneE5-3
+    - -gneE6-3
+    - gneE7-5
+    - gneE8-1
+    - -gneE9-1
+    - gneE11-2
+    - gneE10-2
+
+test_net_file:
+  - four_less.pkl
+  - four_more.pkl
+
+test_input_cells_name:
+  -
+    - -gneE4-0
+    - gneE5-0
+    - gneE6-0
+    - -gneE7-0
+    - -gneE8-0
+    - gneE9-0
+    - -gneE11-0
+    - -gneE10-0
+  -
+    - -gneE4-0
+    - gneE5-0
+    - gneE6-0
+    - -gneE7-0
+    - -gneE8-0
+    - gneE9-0
+    - -gneE11-0
+    - -gneE10-0
