@@ -11,14 +11,14 @@ from network import network_data
 import dir_manage as d
 from utils import sparselist_to_tensor
 
-basic_conf = os.path.join(d.config_data_path, "three_test.yaml")
+basic_conf = os.path.join(d.config_data_path, "two_test.yaml")
 
 with open(basic_conf, 'rb') as f:
     args = yaml.load(f, Loader=yaml.FullLoader)
 
-net_type = "three"
+net_type = "two"
 
-show_time = 100
+show_time = 50
 
 with open(os.path.join(d.cell_data_path, args["net_file"]), 'rb') as f:
     net_information = pickle.load(f)
@@ -72,7 +72,7 @@ imageio.mimsave("targets.gif", frames, 'GIF', duration=0.2)
 
 file_list = []
 for i in range(show_time):
-    file_list.append(os.path.join(d.pic_path, str(i)+'_out.png'))
+    file_list.append(os.path.join(d.pic_path, str(i)+'.png'))
     data_set.show_adj(origin_adj[i-args["init_length"]], file=file_list[i], colors=output[i, :], with_label=True, network_type=net_type)
 
 frames = []
@@ -80,10 +80,10 @@ for img_name in file_list:
     frames.append(imageio.imread(img_name))
 
 imageio.mimsave("outputs.gif", frames, 'GIF', duration=0.2)
-
+'''
 file_list = []
 for i in range(show_time):
-    file_list.append(os.path.join(d.pic_path, str(i)+'_error.png'))
+    file_list.append(os.path.join(d.pic_path, str(i)+'.png'))
     data_set.show_adj(origin_adj[i-args["init_length"]], file=file_list[i], colors=np.round(target[i, :] - output[i, :], decimals=2), with_label=True, network_type=net_type)
 
 frames = []
@@ -91,3 +91,4 @@ for img_name in file_list:
     frames.append(imageio.imread(img_name))
 
 imageio.mimsave("errors.gif", frames, 'GIF', duration=0.2)
+'''

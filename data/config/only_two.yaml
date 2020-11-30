@@ -1,4 +1,4 @@
-input_size: 13
+input_size: 14
 hidden_size: 64
 output_size: 6
 
@@ -8,14 +8,14 @@ show_every: 100
 weight_decay: 5.e-5
 grad_clip: 10
 sample_rate: 1
-sample_decay: 0.02
+sample_decay: 0.03
 
 init_length: 4
-temporal_length: 16
+temporal_length: 24
 sim_step: 0.1
 delteT: 5
 
-name: normalized
+name: new_coder
 
 prefix:
   - two_1
