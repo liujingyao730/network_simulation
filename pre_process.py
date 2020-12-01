@@ -337,8 +337,6 @@ def calculate_layout(net_file, pickle_file, best_distance=50):
         divide_number = len(ordinary_cell[edge]["cell_id"]) * 2
         x = base_line[edge][0]
         y = base_line[edge][1]
-        if edge == "gneE1":
-            a = 1
         for i in range(len(ordinary_cell[edge]["cell_id"])):
             cell = ordinary_cell[edge]["cell_id"][i]
             index = cell_index[cell]
@@ -369,17 +367,17 @@ def enlarge_gap(base_line, best_distance, keys):
 
             assert np.abs(_1_over_2) == 1
 
-            delta_d = best_distance / 2 * np.sqrt(A * A + 1) - _1_over_2 * (C_1 - C_2) / 2
+            delta_d = best_distance / (2 * _1_over_2) * np.sqrt(A * A + 1) - (C_1 - C_2) / 2
 
-            x_1_ = np.array([(A * (x_1[1] - C_1 + delta_d) + x_1[0]) / (A * A + 1), A * x_1[0] + C_1 - delta_d])
-            y_1_ = np.array([(A * (y_1[1] - C_1 + delta_d) + y_1[0]) / (A * A + 1), A * y_1[0] + C_1 - delta_d])
-            x_2_ = np.array([(A * (x_2[1] - C_2 - delta_d) + x_2[0]) / (A * A + 1), A * x_2[0] + C_2 + delta_d])
-            y_2_ = np.array([(A * (y_2[1] - C_2 - delta_d) + y_2[0]) / (A * A + 1), A * y_2[0] + C_2 + delta_d])
+            x_1_1 = (A * (x_1[1] - C_1 - delta_d) + x_1[0]) / (A * A + 1)
+            y_1_1 = (A * (y_1[1] - C_1 - delta_d) + y_1[0]) / (A * A + 1)
+            x_2_1 = (A * (x_2[1] - C_2 + delta_d) + x_2[0]) / (A * A + 1)
+            y_2_1 = (A * (y_2[1] - C_2 + delta_d) + y_2[0]) / (A * A + 1)
 
-            if edge == "gneE1":
-                print(_1_over_2)
-                print(x_1, y_1, x_2, y_2)
-                print(x_1_, y_1_, x_2_, y_2_)
+            x_1_ = np.array([x_1_1, A * x_1_1 + C_1 + delta_d])
+            y_1_ = np.array([y_1_1, A * y_1_1 + C_1 + delta_d])
+            x_2_ = np.array([x_2_1, A * x_2_1 + C_2 - delta_d])
+            y_2_ = np.array([y_2_1, A * y_2_1 + C_2 - delta_d])
 
             base_line[edge] = [x_1_, y_1_]
             base_line[reverse_edge] = [x_2_, y_2_]
@@ -404,7 +402,7 @@ if __name__ == "__main__":
     data_fold = "data"
     pickle_file = "test.pkl"
 
-    layout = calculate_layout(net_file, pickle_file)
+    layout = calculate_layout(net_file, pickle_file, best_distance=50)
 
     with open("test.pkl", 'rb') as f:
         net_information = pickle.load(f)
