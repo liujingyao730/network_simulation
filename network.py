@@ -627,7 +627,7 @@ class data_on_network(object):
 
         return [self.cell_index[name] for name in names]
 
-    def show_adj(self, adj, network_type="two", file="graph.png", colors="white", with_label=False):
+    def show_adj(self, adj, network_type="two", file="graph.png", colors="white", with_label=False, figure_size=(14, 9)):
 
         if network_type == "two":
             pos = draw_utils.two_net_pos
@@ -639,7 +639,7 @@ class data_on_network(object):
             raise NotImplementedError
         else:
             pos = network_type
-            figure_size = (8, 6)
+            figure_size = figure_size
         adj = sparse.coo_matrix(adj)
         row = adj.row
         col = adj.col

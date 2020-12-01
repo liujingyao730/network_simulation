@@ -12,6 +12,7 @@ import yaml
 import pickle
 
 import utils
+from network import data_on_network
 
 dest1 = pd.DataFrame()
 dest2 = pd.DataFrame()
@@ -287,7 +288,7 @@ def fcd_resolve(fcd_file, net_information, prefix="default"):
 
     save_file(prefix)
 
-def calculate_layout(net_file, pickle_file):
+def calculate_layout(net_file, pickle_file, best_distance=50):
 
     net_information = net_resolve(net_file, pickle_file)
 
@@ -300,6 +301,8 @@ def calculate_layout(net_file, pickle_file):
     tree = etree.parse(net_file)
     root = tree.getroot()
 
+    base_line = {}
+    keys = []
     layout = {}
 
     for child in root:
@@ -308,7 +311,6 @@ def calculate_layout(net_file, pickle_file):
 
             edge = child.attrib["id"]
             lane_number = ordinary_cell[edge]["lane_number"]
-            divide_number = len(ordinary_cell[edge]["cell_id"]) + 1
             x = np.array([0., 0.])
             y = np.array([0., 0.])
 
@@ -325,17 +327,98 @@ def calculate_layout(net_file, pickle_file):
             x /= lane_number
             y /= lane_number
 
-            for i in range(len(ordinary_cell[edge]["cell_id"])):
-                cell = ordinary_cell[edge]["cell_id"][i]
-                index = cell_index[cell]
-                layout[index] = (y - x) * (i + 1) / divide_number + x
+            base_line[edge] = [x, y]
+            if edge[0] != '-':
+                keys.append(edge)
+
+    baseline = enlarge_gap(base_line, best_distance, keys)
+
+    for edge in ordinary_cell.keys():
+        divide_number = len(ordinary_cell[edge]["cell_id"]) * 2
+        x = base_line[edge][0]
+        y = base_line[edge][1]
+        if edge == "gneE1":
+            a = 1
+        for i in range(len(ordinary_cell[edge]["cell_id"])):
+            cell = ordinary_cell[edge]["cell_id"][i]
+            index = cell_index[cell]
+            layout[index] = (y - x) * (2 * i + 1) / divide_number + x
 
     return layout
 
+def enlarge_gap(base_line, best_distance, keys):
+
+    for edge in keys:
+        reverse_edge = '-' + edge
+        x_1 = base_line[edge][0]
+        x_2 = base_line[reverse_edge][0]
+        y_1 = base_line[edge][1]
+        y_2 = base_line[reverse_edge][1]
+
+        if x_1[0] - y_1[0] != 0:
+
+            A = round((x_1[1] - y_1[1]) / (x_1[0] - y_1[0]), 3)
+
+            assert A == round((x_2[1] - y_2[1]) / (x_2[0] - y_2[0]), 3)
+
+            C_1 = -1 * A * x_1[0] + x_1[1]
+            C_2 = -1 * A * x_2[0] + x_2[1]
+
+            _1_over_2 = x_1[1] - A * x_1[0] - C_2
+            _1_over_2 = _1_over_2 / np.abs(_1_over_2)
+
+            assert np.abs(_1_over_2) == 1
+
+            delta_d = best_distance / 2 * np.sqrt(A * A + 1) - _1_over_2 * (C_1 - C_2) / 2
+
+            x_1_ = np.array([(A * (x_1[1] - C_1 + delta_d) + x_1[0]) / (A * A + 1), A * x_1[0] + C_1 - delta_d])
+            y_1_ = np.array([(A * (y_1[1] - C_1 + delta_d) + y_1[0]) / (A * A + 1), A * y_1[0] + C_1 - delta_d])
+            x_2_ = np.array([(A * (x_2[1] - C_2 - delta_d) + x_2[0]) / (A * A + 1), A * x_2[0] + C_2 + delta_d])
+            y_2_ = np.array([(A * (y_2[1] - C_2 - delta_d) + y_2[0]) / (A * A + 1), A * y_2[0] + C_2 + delta_d])
+
+            if edge == "gneE1":
+                print(_1_over_2)
+                print(x_1, y_1, x_2, y_2)
+                print(x_1_, y_1_, x_2_, y_2_)
+
+            base_line[edge] = [x_1_, y_1_]
+            base_line[reverse_edge] = [x_2_, y_2_]
+
+        else:
+            x_mid = (x_1 + x_2) / 2
+            y_mid = (y_1 + y_2) / 2
+
+            x_1[0] = x_mid[0] + (x_1[0] - x_mid[0]) / np.abs(x_1[0] - x_mid[0]) * best_distance / 2
+            x_2[0] = x_mid[0] + (x_2[0] - x_mid[0]) / np.abs(x_2[0] - x_mid[0]) * best_distance / 2
+            y_1[0] = y_mid[0] + (y_1[0] - y_mid[0]) / np.abs(y_1[0] - y_mid[0]) * best_distance / 2
+            y_2[0] = y_mid[0] + (y_2[0] - y_mid[0]) / np.abs(y_2[0] - y_mid[0]) * best_distance / 2
+
+            base_line[edge] = [np.array(x_1), np.array(y_1)]
+            base_line[reverse_edge] = [np.array(x_2), np.array(y_2)]
+
+    return base_line
+
 if __name__ == "__main__":
-    net_file = "intersection.net.xml"
+    net_file = "four.net.xml"
     fcd_file = "fcd.xml"
     data_fold = "data"
-    pickle_file = "test.xml"
+    pickle_file = "test.pkl"
 
     layout = calculate_layout(net_file, pickle_file)
+
+    with open("test.pkl", 'rb') as f:
+        net_information = pickle.load(f)
+    destiantion = ["gneE4-3", "-gneE5-3", "-gneE6-3", "gneE7-5", "gneE8-1", "-gneE9-1", "gneE11-2", "gneE10-2"]
+    prefix = ["more_6"]
+    args = {}
+    args["sim_step"] = 0.1
+    args["deltaT"] = 5
+    args["temporal_length"] = 20
+    args["init_length"] = 4
+    args["start"] = 0
+    args["use_cuda"] = True
+    args["dest_number"] = 6
+    start_cell = ["-gneE4-0", "gneE5-0", "gneE6-0", "-gneE7-0", "-gneE8-0", "gneE9-0", "-gneE11-0", "-gneE10-0"]
+    a = data_on_network(net_information, destiantion, prefix, args)
+    inputs, adj_list = a.get_batch()
+    a.show_adj(a.base_adj, network_type=layout, colors=inputs[0, 0, :, 19], with_label=True)
