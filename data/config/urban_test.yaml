@@ -1,0 +1,44 @@
+input_size: 21
+hidden_size: 64
+output_size: 8
+
+use_cuda: True
+num_epochs: 50
+show_every: 100
+weight_decay: 5.e-5
+grad_clip: 10
+sample_rate: 1
+sample_decay: 0.03
+
+init_length: 4
+temporal_length: 200
+sim_step: 0.1
+delteT: 5
+batch_size: 1
+
+model_prefix: four_var
+model: 48
+
+prefix: 
+  - urban_low
+
+destination:
+  -
+    - gneE11-4
+    - -gneE17-4
+    - gneE16-4
+    - gneE5-4
+    - gneE41-4
+    - -gneE6-3
+    - -gneE0-4
+
+net_file: urban.pkl
+
+input_cells_name:
+  - gneE11-0
+  - -gneE17-0
+  - gneE16-0
+  - gneE5-0
+  - gneE41-0
+  - -gneE6-0
+  - -gneE0-0

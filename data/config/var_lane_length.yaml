@@ -39,17 +39,17 @@ destination:
   - gneE9-2
 
 net_file: 
-  - three_mid
-  - three_shorter
-  - three_shorter
-  - three_longer
-  - three_longer
-  - three_shortest
-  - three_shortest
-  - three_longest
-  - three_longest
-  - three_mix1
-  - three_mix2
+  - three_mid.pkl
+  - three_shorter.pkl
+  - three_shorter.pkl
+  - three_longer.pkl
+  - three_longer.pkl
+  - three_shortest.pkl
+  - three_shortest.pkl
+  - three_longest.pkl
+  - three_longest.pkl
+  - three_mix1.pkl
+  - three_mix2.pkl
 
 input_cells_name:
   - gneE4-0
@@ -73,9 +73,9 @@ test_destination:
   - gneE9-2
 
 test_net_file:
-  - three_mid
-  - three_mix1
-  - three_mix2
+  - three_mid.pkl
+  - three_mix1.pkl
+  - three_mix2.pkl
 
 test_input_cells_name:
   - gneE4-0

@@ -6,11 +6,11 @@ import yaml
 import matplotlib.pyplot as plt
 
 from model import GCN_GRU, node_encode_attention
-from network import network_data
+from network import network_data, data_on_network
 import dir_manage as d
 from utils import sparselist_to_tensor
 
-basic_conf = os.path.join(d.config_data_path, "three_test.yaml")
+basic_conf = os.path.join(d.config_data_path, "urban_test.yaml")
 
 with open(basic_conf, 'rb') as f:
     args = yaml.load(f, Loader=yaml.FullLoader)
@@ -18,7 +18,7 @@ with open(basic_conf, 'rb') as f:
 with open(os.path.join(d.cell_data_path, args["net_file"]), 'rb') as f:
     net_information = pickle.load(f)
 
-data_set = network_data(net_information, args["destination"], args["prefix"], args)
+data_set = data_on_network(net_information, args["destination"][0], args["prefix"], args)
 # data_set.normalize_data()
 
 inputs, adj_list = data_set.get_batch()
@@ -57,8 +57,8 @@ target = torch.sum(target[:, :, :, :args["output_size"]], dim=3)
 print(f(output, target))
 print(f(output[:, -1, :], target[:, -1, :]))
 
-real_cell = target[0, :, :].detach().cpu().numpy().sum(1)[:200]
-predict_cell = output[0, :, :].detach().cpu().numpy().sum(1)[:200]
+real_cell = target[0, :, :].detach().cpu().numpy().sum(1)[:100]
+predict_cell = output[0, :, :].detach().cpu().numpy().sum(1)[:100]
 x = np.array(range(real_cell.shape[0]))
 
 plt.figure()
