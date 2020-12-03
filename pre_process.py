@@ -397,18 +397,19 @@ def enlarge_gap(base_line, best_distance, keys):
     return base_line
 
 if __name__ == "__main__":
-    net_file = "urban.net.xml"
+    net_file = "zhangzhou.net.xml"
     fcd_file = "fcd.xml"
     data_fold = "data"
     pickle_file = "test.pkl"
 
-    layout = calculate_layout(net_file, pickle_file, best_distance=50)
+    # layout = calculate_layout(net_file, pickle_file, best_distance=30)
 
-    with open("test.pkl", 'rb') as f:
+    with open("zhangzhou.pkl", 'rb') as f:
         net_information = pickle.load(f)
     # destiantion = ["gneE4-3", "-gneE5-3", "-gneE6-3", "gneE7-5", "gneE8-1", "gneE9-1", "gneE11-2", "gneE10-2"]
-    destiantion = ["-gneE11-4", "-gneE17-4", "gneE16-4", "gneE5-4", "gneE41-4", "-gneE6-3", "-gneE0-4"]
-    prefix = ["urban_low"]
+    # destiantion = ["-gneE11-4", "-gneE17-4", "gneE16-4", "gneE5-4", "gneE41-4", "-gneE6-3", "-gneE0-4"]
+    destiantion = ["361967797#0-1"]
+    prefix = ["zhangzhou"]
     args = {}
     args["sim_step"] = 0.1
     args["deltaT"] = 5
@@ -417,8 +418,9 @@ if __name__ == "__main__":
     args["start"] = 0
     args["use_cuda"] = True
     args["dest_number"] = 6
-    start_cell = ["gneE11-0", "-gneE17-0", "gneE16-0", "gneE5-0", "gneE41-0", "-gneE6-0", "-gneE0-0"]
+    start_cell = ["816788634#0-0", "816788633#0-0", "-365086094-0", "-756962595#0-0", "756962585#0-0"]
+    # start_cell = ["gneE11-0", "-gneE17-0", "gneE16-0", "gneE5-0", "gneE41-0", "-gneE6-0", "-gneE0-0"]
     # start_cell = ["-gneE4-0", "gneE5-0", "gneE6-0", "-gneE7-0", "-gneE8-0", "-gneE9-0", "-gneE11-0", "-gneE10-0"]
     a = data_on_network(net_information, destiantion, prefix, args)
     inputs, adj_list = a.get_batch()
-    a.show_adj(a.base_adj, network_type=layout, colors=range(a.N), with_label=True)
+    a.show_adj(a.base_adj, network_type="default", colors=range(a.N), with_label=True, figure_size=(30, 30))

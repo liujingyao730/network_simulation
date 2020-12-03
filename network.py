@@ -433,11 +433,11 @@ class data_on_network(object):
                 end = self.signal_connection[from_cell][to_cell][1]
                 con_dir = self.signal_connection[from_cell][to_cell][3]
 
-                if con_dir == "l":
+                if con_dir == "l" or "L":
                     weight = 0.33
-                elif con_dir == "r":
+                elif con_dir == "r" or "R":
                     weight = 0.5
-                elif con_dir == 's':
+                elif con_dir == 's' or "S":
                     weight = 1
                 else:
                     raise NotImplementedError
@@ -629,17 +629,6 @@ class data_on_network(object):
 
     def show_adj(self, adj, network_type="two", file="graph.png", colors="white", with_label=False, figure_size=(14, 9)):
 
-        if network_type == "two":
-            pos = draw_utils.two_net_pos
-            figure_size = (8, 6)
-        elif network_type == "three":
-            pos = draw_utils.three_net_pos
-            figure_size = (12, 6)
-        elif network_type == "four":
-            raise NotImplementedError
-        else:
-            pos = network_type
-            figure_size = figure_size
         adj = sparse.coo_matrix(adj)
         row = adj.row
         col = adj.col
@@ -650,6 +639,21 @@ class data_on_network(object):
         N = nx.path_graph(self.N)
         G.add_nodes_from(N)
         G.add_edges_from(edges)
+
+        if network_type == "two":
+            pos = draw_utils.two_net_pos
+            figure_size = (8, 6)
+        elif network_type == "three":
+            pos = draw_utils.three_net_pos
+            figure_size = (12, 6)
+        elif network_type == "four":
+            raise NotImplementedError
+        elif network_type == "default":
+            pos = nx.spring_layout(G, iterations=100)
+            figure_size = figure_size
+        else:
+            pos = network_type
+            figure_size = figure_size
 
         plt.figure(figsize=figure_size)
         nx.draw(G,pos, node_color=colors, edge_color='red', alpha=0.5)
