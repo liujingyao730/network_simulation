@@ -1,4 +1,4 @@
-input_size: 17
+input_size: 21
 hidden_size: 64
 output_size: 8
 
@@ -39,7 +39,7 @@ destination:
     - -gneE6-3
     - gneE7-5
     - gneE8-1
-    - -gneE9-1
+    - gneE9-1
     - gneE11-2
     - gneE10-2
   -
@@ -48,7 +48,7 @@ destination:
     - -gneE6-3
     - gneE7-5
     - gneE8-1
-    - -gneE9-1
+    - gneE9-1
     - gneE11-2
     - gneE10-2
 
@@ -89,7 +89,7 @@ test_destination:
     - -gneE6-3
     - gneE7-5
     - gneE8-1
-    - -gneE9-1
+    - gneE9-1
     - gneE11-2
     - gneE10-2
   -
@@ -98,7 +98,7 @@ test_destination:
     - -gneE6-3
     - gneE7-5
     - gneE8-1
-    - -gneE9-1
+    - gneE9-1
     - gneE11-2
     - gneE10-2
 
@@ -113,7 +113,7 @@ test_input_cells_name:
     - gneE6-0
     - -gneE7-0
     - -gneE8-0
-    - gneE9-0
+    - -gneE9-0
     - -gneE11-0
     - -gneE10-0
   -
@@ -122,6 +122,6 @@ test_input_cells_name:
     - gneE6-0
     - -gneE7-0
     - -gneE8-0
-    - gneE9-0
+    - -gneE9-0
     - -gneE11-0
     - -gneE10-0

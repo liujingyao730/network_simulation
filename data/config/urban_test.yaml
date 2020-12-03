@@ -11,20 +11,20 @@ sample_rate: 1
 sample_decay: 0.03
 
 init_length: 4
-temporal_length: 200
+temporal_length: 700
 sim_step: 0.1
 delteT: 5
 batch_size: 1
 
 model_prefix: four_var
-model: 48
+model: 49
 
 prefix: 
   - urban_low
 
 destination:
   -
-    - gneE11-4
+    - -gneE11-4
     - -gneE17-4
     - gneE16-4
     - gneE5-4
