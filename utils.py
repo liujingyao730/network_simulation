@@ -1,4 +1,6 @@
 import numpy as np
+from scipy.interpolate import interp2d
+import matplotlib.pyplot as plt
 import scipy.sparse as sp
 import torch
 
@@ -26,3 +28,32 @@ def adj_to_laplace(adj_list):
     laplace = torch.einsum("tbc,tcd->tbd", laplace, D_tilde)
 
     return laplace
+
+
+def show_heat(network_layout, input_data, file="heat_map"):
+        
+    assert len(network_layout) == input_data.shape[0]
+
+    x = np.array([network_layout[i][0] for i in range(len(network_layout))])
+    y = np.array([network_layout[i][1] for i in range(len(network_layout))])
+    input_data = np.array(input_data)
+
+    x_min = x.min()
+    x_max = x.max()
+    y_min = y.min()
+    y_max = y.max()
+
+    x_t = np.linspace(x_min, x_max, 100)
+    y_t = np.linspace(y_min, y_max, 100)
+    X, Y = np.meshgrid(x_t, y_t)
+
+    interpolant = interp2d(x, y, input_data, kind="linear")
+
+    plt.figure()
+    plt.axes().set_aspect("equal")
+    plt.pcolor(X, Y, interpolant(x_t, y_t))
+    plt.scatter(x, y, 25, input_data)
+    plt.xlim(x_min, x_max)
+    plt.ylim(y_min, y_max)
+
+    plt.savefig(file)

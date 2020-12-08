@@ -649,7 +649,7 @@ class data_on_network(object):
         elif network_type == "four":
             raise NotImplementedError
         elif network_type == "default":
-            pos = nx.spring_layout(G, iterations=100)
+            pos = nx.spring_layout(G, iterations=200)
             figure_size = figure_size
         else:
             pos = network_type
