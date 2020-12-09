@@ -349,15 +349,18 @@ def enlarge_gap(base_line, best_distance, keys):
     for edge in keys:
         reverse_edge = '-' + edge
         x_1 = base_line[edge][0]
-        x_2 = base_line[reverse_edge][0]
         y_1 = base_line[edge][1]
-        y_2 = base_line[reverse_edge][1]
+        if reverse_edge in base_line.keys():
+            x_2 = base_line[reverse_edge][0]
+            y_2 = base_line[reverse_edge][1]
+        else:
+            continue
 
         if x_1[0] - y_1[0] != 0:
 
             A = round((x_1[1] - y_1[1]) / (x_1[0] - y_1[0]), 3)
 
-            assert A == round((x_2[1] - y_2[1]) / (x_2[0] - y_2[0]), 3)
+            # assert A == round((x_2[1] - y_2[1]) / (x_2[0] - y_2[0]), 2)
 
             C_1 = -1 * A * x_1[0] + x_1[1]
             C_2 = -1 * A * x_2[0] + x_2[1]
@@ -397,19 +400,19 @@ def enlarge_gap(base_line, best_distance, keys):
     return base_line
 
 if __name__ == "__main__":
-    net_file = "zhangzhou.net.xml"
+    net_file = "roundabout.net.xml"
     fcd_file = "fcd.xml"
     data_fold = "data"
     pickle_file = "test.pkl"
 
-    # layout = calculate_layout(net_file, pickle_file, best_distance=30)
+    layout = calculate_layout(net_file, pickle_file, best_distance=50)
 
-    with open("zhangzhou.pkl", 'rb') as f:
+    with open("test.pkl", 'rb') as f:
         net_information = pickle.load(f)
     # destiantion = ["gneE4-3", "-gneE5-3", "-gneE6-3", "gneE7-5", "gneE8-1", "gneE9-1", "gneE11-2", "gneE10-2"]
     # destiantion = ["-gneE11-4", "-gneE17-4", "gneE16-4", "gneE5-4", "gneE41-4", "-gneE6-3", "-gneE0-4"]
-    destiantion = ["361967797#0-1"]
-    prefix = ["zhangzhou"]
+    destiantion = ["-gneE1-1", "-gneE2-1", "-gneE10-1", "-gneE11-1", "-gneE14-1", "-gneE15-1", "-gneE20-2", "-gneE19-2"]
+    prefix = ["roundabout1"]
     args = {}
     args["sim_step"] = 0.1
     args["deltaT"] = 5
@@ -418,9 +421,9 @@ if __name__ == "__main__":
     args["start"] = 0
     args["use_cuda"] = True
     args["dest_number"] = 6
-    start_cell = ["816788634#0-0", "816788633#0-0", "-365086094-0", "-756962595#0-0", "756962585#0-0"]
+    start_cell = ["gneE1-0", "gneE2-0", "gneE10-0", "gneE11-0", "gneE14-0", "gneE15-0", "gneE20-0", "gneE19-0", "gneE27-0", "gneE28-0", "gneE29-0", "gneE30-0", "gneE31-0", "gneE33-0", "gneE32-0", "gneE26-0", "gneE25-0", "gneE24-0"]
     # start_cell = ["gneE11-0", "-gneE17-0", "gneE16-0", "gneE5-0", "gneE41-0", "-gneE6-0", "-gneE0-0"]
     # start_cell = ["-gneE4-0", "gneE5-0", "gneE6-0", "-gneE7-0", "-gneE8-0", "-gneE9-0", "-gneE11-0", "-gneE10-0"]
     a = data_on_network(net_information, destiantion, prefix, args)
     inputs, adj_list = a.get_batch()
-    a.show_adj(a.base_adj, network_type="default", colors=range(a.N), with_label=True, figure_size=(30, 30))
+    a.show_adj(a.all_adj, network_type=layout, colors=range(a.N), with_label=True, figure_size=(15, 15))
