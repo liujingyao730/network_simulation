@@ -366,6 +366,7 @@ class data_on_network(object):
 
         self.destination = destination
         self.prefixs = prefixs
+        self.number_files = len(prefixs)
 
         self.data_fold = d.cell_data_path
         self.sim_step = args.get("sim_step", 0.1)
@@ -523,7 +524,7 @@ class data_on_network(object):
         longest_time = 0
         shape_loc = -1
 
-        for i in range(len(self.prefixs)):
+        for i in range(self.number_files):
             
             prefix = self.prefixs[i]
 
@@ -543,7 +544,7 @@ class data_on_network(object):
 
         self.time_bound = self.data.shape[1] - self.step * self.temporal_length
 
-        self.max_batch_size = int(self.data.shape[1] / self.cycle_step)
+        self.max_batch_size = int(self.time_bound / self.cycle_step)
 
         if self.batch_size is None:
             self.batch_size = self.max_batch_size
@@ -607,21 +608,23 @@ class data_on_network(object):
         return adj_list
 
     def get_batch(self):
+        
+        time_list = np.array([
+            self.index + i * self.step for i in range(self.temporal_length+1)
+        ])
+        time_lists = [time_list+i*self.cycle_step for i in range(self.batch_size)]
+        input_data = self.data[:, time_lists, :, :]
+        input_data = input_data.reshape(self.number_files*self.batch_size, self.temporal_length+1, self.N, self.dest_size)
 
-        input_data = self.get_item(self.index)
-        input_datas = input_data
+        cycle_time_list = [
+            (self.index + i * self.step) % self.cycle_step for i in range(self.temporal_length+1)
+        ]
+        net_feat = np.repeat(self.network_feature[None, cycle_time_list, :, :], input_data.shape[0], axis=0)
 
-        for i in range(self.batch_size - 1):
-            point = (1 + i) * self.cycle_step
-            if point > self.time_bound:
-                break
-            input_data = self.get_item(point)
-            input_datas = np.concatenate(
-                (input_datas, input_data), axis=0)
-
+        input_data = np.concatenate((input_data, net_feat), axis=3)
         adj_list = self.get_adj_list(self.index)
 
-        return input_datas, adj_list
+        return input_data, adj_list
     
     def name_to_id(self, names):
 

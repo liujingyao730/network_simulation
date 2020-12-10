@@ -11,7 +11,7 @@ sample_rate: 1
 sample_decay: 0.03
 
 init_length: 4
-temporal_length: 700
+temporal_length: 600
 sim_step: 0.1
 delteT: 5
 batch_size: 1
@@ -20,7 +20,7 @@ model_prefix: four_var
 model: 49
 
 prefix: 
-  - urban_low
+  - urban_high
 
 destination:
   -
@@ -35,10 +35,10 @@ destination:
 net_file: urban.pkl
 
 input_cells_name:
-  - gneE11-0
-  - -gneE17-0
-  - gneE16-0
-  - gneE5-0
-  - gneE41-0
-  - -gneE6-0
-  - -gneE0-0
+  - -gneE11-0
+  - gneE17-0
+  - -gneE16-0
+  - -gneE5-0
+  - -gneE41-0
+  - gneE6-0
+  - gneE0-0
