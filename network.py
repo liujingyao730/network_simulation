@@ -388,8 +388,10 @@ class data_on_network(object):
         self.is_end_loc = self.dest_size + 4
 
         self.cell_list = []
+        self.lane_number = []
         for edge in self.ordinary_cell:
             self.cell_list.extend(self.ordinary_cell[edge]["cell_id"])
+            self.lane_number.extend([self.ordinary_cell[edge]["lane_number"] for i in range(len(self.ordinary_cell[edge]["cell_id"]))])
 
         self.N = len(self.cell_list)
         self.cell_index = {self.cell_list[i]: i for i in range(self.N)}
@@ -415,7 +417,7 @@ class data_on_network(object):
 
         self.rows.extend([i for i in range(self.N)])
         self.cols.extend([i for i in range(self.N)])
-        self.vals.extend([1 for i in range(self.N)])
+        self.vals.extend([self.lane_number[i] for i in range(self.N)])
 
         self.base_adj = sparse.csc_matrix((self.vals, (self.rows, self.cols)),
                                           shape=(self.N, self.N))
@@ -434,14 +436,7 @@ class data_on_network(object):
                 end = self.signal_connection[from_cell][to_cell][1]
                 con_dir = self.signal_connection[from_cell][to_cell][3]
 
-                if con_dir == "l" or "L":
-                    weight = 0.33
-                elif con_dir == "r" or "R":
-                    weight = 0.5
-                elif con_dir == 's' or "S":
-                    weight = 1
-                else:
-                    raise NotImplementedError
+                weight = self.signal_connection[from_cell][to_cell][4]
 
                 self.intervals[junction_id].append(
                     [start, end, from_id, to_id])
@@ -450,7 +445,7 @@ class data_on_network(object):
                                       shape=(self.N, self.N)))
                 self.rows.append(from_id)
                 self.cols.append(to_id)
-                self.vals.append(1)
+                self.vals.append(weight)
 
         self.all_adj = sparse.csc_matrix((self.vals, (self.rows, self.cols)),
                                          shape=(self.N, self.N))

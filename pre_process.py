@@ -138,8 +138,10 @@ def net_resolve(net_file, pickle_file):
                         signal_connection[from_cell] = {}
                     
                     if to_cell not in signal_connection[from_cell].keys():
-                        signal_connection[from_cell][to_cell] = [start, end, tlc_index, con_dir]
+                        signal_connection[from_cell][to_cell] = [start, end, tlc_index, con_dir, 1]
                     else:
+                        if phase[index] in ["G", "g"]:
+                            signal_connection[from_cell][to_cell][4] += 1
                         if start == signal_connection[from_cell][to_cell][1]:
                             signal_connection[from_cell][to_cell][1] = end
                         if end == signal_connection[from_cell][to_cell][0]:
@@ -401,10 +403,10 @@ def enlarge_gap(base_line, best_distance, keys):
     return base_line
 
 if __name__ == "__main__":
-    net_file = "large_intersection.net.xml"
+    net_file = "four_less.net.xml"
     fcd_file = "fcd.xml"
     data_fold = "data"
-    pickle_file = "test.pkl"
+    pickle_file = "four_less.pkl"
 
     layout = calculate_layout(net_file, pickle_file, best_distance=50)
 
