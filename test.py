@@ -10,7 +10,7 @@ from network import network_data, data_on_network
 import dir_manage as d
 from utils import sparselist_to_tensor
 
-basic_conf = os.path.join(d.config_data_path, "urban_test.yaml")
+basic_conf = os.path.join(d.config_data_path, "large_intersection_test.yaml")
 
 with open(basic_conf, 'rb') as f:
     args = yaml.load(f, Loader=yaml.FullLoader)
@@ -54,11 +54,22 @@ f = torch.nn.MSELoss()
 output = torch.sum(output, dim=3)
 target = torch.sum(target[:, :, :, :args["output_size"]], dim=3)
 
+max_error = 0
+max_error_cell = -1
+
+for i in range(output.shape[2]):
+    error = f(output[0, :, i], target[0, :, i])
+    if error > 25:
+        print(i, error)
+    if error > max_error:
+        max_error = error
+        max_error_cell = i
+
 print(f(output, target))
 print(f(output[:, -1, :], target[:, -1, :]))
 
-real_cell = target[0, :, :].detach().cpu().numpy().sum(1)[:100]
-predict_cell = output[0, :, :].detach().cpu().numpy().sum(1)[:100]
+real_cell = target[0, :, 186].detach().cpu().numpy()[:200]
+predict_cell = output[0, :, 186].detach().cpu().numpy()[:200]
 x = np.array(range(real_cell.shape[0]))
 
 plt.figure()

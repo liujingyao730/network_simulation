@@ -1,0 +1,58 @@
+input_size: 21
+hidden_size: 64
+output_size: 8
+
+use_cuda: True
+num_epochs: 50
+show_every: 100
+weight_decay: 5.e-5
+grad_clip: 10
+sample_rate: 1
+sample_decay: 0.03
+
+init_length: 4
+temporal_length: 550
+sim_step: 0.1
+delteT: 5
+batch_size: 1
+
+model_prefix: four_var
+model: 49
+
+prefix: 
+  - large_intersection
+
+destination:
+  -
+    - -gneE6-2
+    - -gneE22-2
+    - -gneE23-2
+    - gneE5-4
+    - -gneE27-3
+    - gneE11-3
+    - -gneE26-2
+    - -gneE0-3
+
+net_file: large_intersection.pkl
+
+input_cells_name:
+  - gneE6-0
+  - gneE22-0
+  - gneE23-0
+  - -gneE5-0
+  - gneE27-0
+  - -gneE11-0
+  - gneE26-0
+  - gneE0-0
+  - gneE12-0
+  - gneE13-0
+  - gneE14-0
+  - gneE15-0
+  - gneE20-0
+  - gneE21-0
+  - gneE16-0
+  - gneE17-0
+  - gneE18-0
+  - gneE19-0
+  - gneE25-0
+  - gneE24-0
