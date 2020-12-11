@@ -32,12 +32,12 @@ def train_epoch(args, model, loss_function, optimizer, meter, sample_rate):
 
         with open(os.path.join(d.cell_data_path, net_file[i]), 'rb') as f:
             net_information = pickle.load(f)
-        
-        print("process net ", net_file[i])
 
         data_set = data_on_network(net_information, destination[i], prefix_list[i], args)
         input_cells = data_set.name_to_id(input_cells_name[i])
         model.set_input_cells(input_cells)
+
+        print("process net ", net_file[i])
 
         while True:
 
