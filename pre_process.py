@@ -12,6 +12,7 @@ import yaml
 import pickle
 
 import utils
+import dir_manage as d
 from network import data_on_network
 
 dest1 = pd.DataFrame()
@@ -400,7 +401,7 @@ def enlarge_gap(base_line, best_distance, keys):
     return base_line
 
 if __name__ == "__main__":
-    net_file = "roundabout.net.xml"
+    net_file = "large_intersection.net.xml"
     fcd_file = "fcd.xml"
     data_fold = "data"
     pickle_file = "test.pkl"
@@ -409,10 +410,12 @@ if __name__ == "__main__":
 
     with open("test.pkl", 'rb') as f:
         net_information = pickle.load(f)
-    # destiantion = ["gneE4-3", "-gneE5-3", "-gneE6-3", "gneE7-5", "gneE8-1", "gneE9-1", "gneE11-2", "gneE10-2"]
-    # destiantion = ["-gneE11-4", "-gneE17-4", "gneE16-4", "gneE5-4", "gneE41-4", "-gneE6-3", "-gneE0-4"]
-    destiantion = ["-gneE1-1", "-gneE2-1", "-gneE10-1", "-gneE11-1", "-gneE14-1", "-gneE15-1", "-gneE20-2", "-gneE19-2"]
-    prefix = ["roundabout1"]
+    basic_conf = basic_conf = os.path.join(d.config_data_path, "large_intersection_test.yaml")
+    with open(basic_conf, 'rb') as f:
+        args = yaml.load(f, Loader=yaml.FullLoader)
+
+    destiantion = args["destination"][0]
+    prefix = args["prefix"]
     args = {}
     args["sim_step"] = 0.1
     args["deltaT"] = 5
@@ -421,9 +424,6 @@ if __name__ == "__main__":
     args["start"] = 0
     args["use_cuda"] = True
     args["dest_number"] = 6
-    start_cell = ["gneE1-0", "gneE2-0", "gneE10-0", "gneE11-0", "gneE14-0", "gneE15-0", "gneE20-0", "gneE19-0", "gneE27-0", "gneE28-0", "gneE29-0", "gneE30-0", "gneE31-0", "gneE33-0", "gneE32-0", "gneE26-0", "gneE25-0", "gneE24-0"]
-    # start_cell = ["gneE11-0", "-gneE17-0", "gneE16-0", "gneE5-0", "gneE41-0", "-gneE6-0", "-gneE0-0"]
-    # start_cell = ["-gneE4-0", "gneE5-0", "gneE6-0", "-gneE7-0", "-gneE8-0", "-gneE9-0", "-gneE11-0", "-gneE10-0"]
     a = data_on_network(net_information, destiantion, prefix, args)
     inputs, adj_list = a.get_batch()
-    a.show_adj(a.all_adj, network_type=layout, colors=range(a.N), with_label=True, figure_size=(15, 15))
+    a.show_adj(a.all_adj, network_type=layout, colors=range(a.N), with_label=True, figure_size=(20, 20))
