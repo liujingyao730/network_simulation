@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 
-from layers import gcn, gat
+from layers import gcn, gat, dcn
 from utils import adj_to_laplace
 
 
@@ -168,6 +168,12 @@ class node_encode_attention(nn.Module):
             self.backward_gnn = gat(self.hidden_size, self.hidden_size)
             self.node_encoder_forward = gat(self.input_size - self.dest_size, self.dest_size)
             self.node_encoder_backward = gat(self.input_size - self.dest_size, self.dest_size)
+        elif self.gnn_type == "dcn":
+            self.init_graph = dcn(self.input_size, self.hidden_size)
+            self.forward_gnn = dcn(self.hidden_size, self.hidden_size)
+            self.backward_gnn = dcn(self.hidden_size, self.hidden_size)
+            self.node_encoder_forward = dcn(self.input_size - self.dest_size, self.dest_size)
+            self.node_encoder_backward = dcn(self.input_size - self.dest_size, self.dest_size)
         else:
             raise NotImplementedError
         self.sptial_merge = nn.Linear(2*self.hidden_size, self.hidden_size)
@@ -293,7 +299,7 @@ if __name__ == "__main__":
     args = {}
     args["input_size"] = 13
     args["output_size"] = 6
-    args["gnn"] = "gat"
+    args["gnn"] = "dcn"
 
     input_data = Variable(torch.rand(17, 8, 40, 13))
     adj_list = Variable(torch.rand(8, 40, 40))

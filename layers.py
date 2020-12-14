@@ -65,9 +65,46 @@ class gat(nn.Module):
         h_prime = torch.einsum("bmn,bno->bmo", attention, h)
 
         return h_prime
+    
+class dcn(nn.Module):
+
+    def __init__(self, input_size, output_size, activation="relu"):
+
+        super(dcn, self).__init__()
+
+        self.input_size = input_size
+        self.output_size = output_size
+        
+        if activation == "relu":
+            self.activation = nn.ReLU()
+        elif activation == "leakyrelu":
+            self.activation = nn.LeakyReLU()
+        elif activation == "sigmoid":
+            self.activation == nn.Sigmoid()
+        else:
+            raise NotImplementedError
+
+        self.out_weight = nn.parameter.Parameter(torch.Tensor(self.input_size, self.output_size))
+        self.in_weight = nn.parameter.Parameter(torch.Tensor(self.input_size, self.output_size))
+
+        torch.nn.init.xavier_normal_(self.out_weight)
+        torch.nn.init.xavier_normal_(self.in_weight)
+    
+    def forward(self, input_data, laplace):
+
+        out_h = torch.einsum("cc,bci->bci", laplace, input_data)
+        out_h = torch.einsum("bci,io->bco", out_h, self.out_weight)
+        
+        in_h = torch.einsum("cc,bci->bci", laplace, input_data)
+        in_h = torch.einsum("bci,io->bco", in_h, self.in_weight)
+        
+        output = in_h + out_h
+        output = self.activation(output)
+
+        return output
 
 if __name__ == "__main__":
-    g = gat(8, 16)
+    g = dcn(8, 16)
     input_data = torch.rand(10, 40, 8).float()
     laplace = torch.rand(40, 40).float()
     output = g(input_data, laplace)

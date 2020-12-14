@@ -539,11 +539,13 @@ class data_on_network(object):
 
         self.time_bound = self.data.shape[1] - self.step * self.temporal_length
 
-        self.max_batch_size = int(self.time_bound / self.cycle_step)
+        self.max_batch_size = int(self.time_bound / self.cycle_step) - 1
 
-        if self.batch_size is None:
+        if self.batch_size is None or self.batch_size > self.max_batch_size:
             self.batch_size = self.max_batch_size
         self.index = 0
+
+        self.time_bound -= self.cycle_step * self.batch_size
     
     def read_prefix(self, prefix):
 
