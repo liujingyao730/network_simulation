@@ -256,13 +256,13 @@ class node_encode_attention(nn.Module):
 
         for i in range(temporal - 1):
 
-            node_encode_forward = self.node_encoder_forward(input_data[:, i, :, self.dest_size:], laplace_list_forward[i, :, :])
+            node_encode_forward = self.node_encoder_forward(inputs[:, :, self.dest_size:], laplace_list_forward[i, :, :])
             node_alpha_forward = self.softmax(node_encode_forward)
-            tmp_input_forward = node_alpha_forward.mul(input_data[:, i, :, :self.dest_size])
+            tmp_input_forward = node_alpha_forward.mul(inputs[:, :, :self.dest_size])
 
-            node_encode_backward = self.node_encoder_backward(input_data[:, i, :, self.dest_size:], laplace_list_backward[i, :, :])
+            node_encode_backward = self.node_encoder_backward(inputs[:, :, self.dest_size:], laplace_list_backward[i, :, :])
             node_alpha_backward = self.softmax(node_encode_backward)
-            tmp_input_backward = node_alpha_backward.mul(input_data[:, i, :, :self.dest_size])
+            tmp_input_backward = node_alpha_backward.mul(inputs[:, :, :self.dest_size])
 
             tmp_input = torch.cat((tmp_input_forward, tmp_input_backward), axis=2)
 
