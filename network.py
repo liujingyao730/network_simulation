@@ -537,6 +537,8 @@ class data_on_network(object):
             self.data[i] = data
         self.data = np.array(self.data)
 
+        assert self.step * self.temporal_length < self.data.shape[1]
+
         self.time_bound = self.data.shape[1] - self.step * self.temporal_length
 
         self.max_batch_size = int(self.time_bound / self.cycle_step) - 1

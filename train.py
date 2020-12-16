@@ -11,46 +11,33 @@ import time
 import argparse
 
 from model import GCN_GRU, node_encode_attention
-from network import network_data
+from network import data_on_network
 import dir_manage as d
 from utils import sparselist_to_tensor
 from loss_function import non_negative_loss, narrow_output_loss
 
+def train_epoch(args, model, loss_function, optimizer, meter, sample_rate):
 
-def run_epoch(args, model, loss_function, optimizer, meter, sample_rate):
-
-    prefix_list = args.get("prefix", ["default"])
-    destination = args.get("destination", ["-genE0-2", "gneE3-2", "gneE4-2", "gneE5-2", "gneE2-2", "gneE6-2"])
-    net_file = args.get("net_file", "test_net.pkl")
-    input_cells_name = args.get("input_cells_name", ["gneE0-0", "-gneE3-0", "-gneE4-0", "-gneE5-0", "-gneE2-0", "-gneE6-0"])
+    prefix_list = args.get("prefix", [["default"]])
+    destination = args.get("destination", [["-genE0-2", "gneE3-2", "gneE4-2", "gneE5-2", "gneE2-2", "gneE6-2"]])
+    net_file = args.get("net_file", ["test_net.pkl"])
+    input_cells_name = args.get("input_cells_name", [["gneE0-0", "-gneE3-0", "-gneE4-0", "-gneE5-0", "-gneE2-0", "-gneE6-0"]])
     use_cuda = args.get("use_cuda", True)
     grad_clip = args.get("grad_clip", 10)
-    show_every = args.get("show_every", 25)
-
-    if isinstance(net_file, list):
-        assert len(net_file) == len(prefix_list)
-    elif isinstance(net_file, dict):
-        net_file = [net_file[prefix] for prefix in prefix_list]
-    elif isinstance(net_file, str):
-        net_file = [net_file for prefix in prefix_list]
-    
-    if not isinstance(destination[0], list):
-        destination = [destination for i in range(len(prefix_list))]
-
-    if not isinstance(input_cells_name[0], list):
-        input_cells_name = [input_cells_name for i in range(len(prefix_list))]
+    show_every = args.get("show_every", 100)
 
     batch_index = 0
 
-    for i in range(len(prefix_list)):
+    for i in range(len(net_file)):
 
         with open(os.path.join(d.cell_data_path, net_file[i]), 'rb') as f:
             net_information = pickle.load(f)
 
-        data_set = network_data(net_information, destination[i], prefix_list[i], args)
-        # data_set.normalize_data()
+        data_set = data_on_network(net_information, destination[i], prefix_list[i], args)
         input_cells = data_set.name_to_id(input_cells_name[i])
         model.set_input_cells(input_cells)
+
+        print("process net ", net_file[i])
 
         while True:
 
@@ -73,7 +60,14 @@ def run_epoch(args, model, loss_function, optimizer, meter, sample_rate):
             else:
                 outputs = model(inputs, adj_list)
 
-            loss = loss_function(torch.sum(targets[:, :, :, :args["output_size"]], dim=3), torch.sum(outputs, dim=3))
+            dest_loss = loss_function(targets[:, :, :, :args["output_size"]], outputs)
+
+            total_loss = loss_function(
+                torch.sum(targets[:, :, :, :args["output_size"]], dim=3), 
+                torch.sum(outputs, dim=3)
+            )
+
+            loss = dest_loss + total_loss
 
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
@@ -84,7 +78,7 @@ def run_epoch(args, model, loss_function, optimizer, meter, sample_rate):
             if batch_index % show_every == 0:
 
                 print("batch {}, train_loss = {:.3f}".format(batch_index, meter.value()[0]))
-
+            
             batch_index += 1
 
             if not data_set.next_index():
@@ -94,35 +88,21 @@ def run_epoch(args, model, loss_function, optimizer, meter, sample_rate):
 
 def test_epoch(args, model, loss_function, meter):
 
-    prefix_list = args.get("test_prefix", ["default"])
-    destination = args.get("test_destination", ["-genE0-2", "gneE3-2", "gneE4-2", "gneE5-2", "gneE2-2", "gneE6-2"])
-    net_file = args.get("test_net_file", "test_net.pkl")
-    input_cells_name = args.get("test_input_cells_name", ["gneE0-0", "-gneE3-0", "-gneE4-0", "-gneE5-0", "-gneE2-0", "-gneE6-0"])
+    prefix_list = args.get("test_prefix", [["default"]])
+    destination = args.get("test_destination", [["-genE0-2", "gneE3-2", "gneE4-2", "gneE5-2", "gneE2-2", "gneE6-2"]])
+    net_file = args.get("test_net_file", ["test_net.pkl"])
+    input_cells_name = args.get("test_input_cells_name", [["gneE0-0", "-gneE3-0", "-gneE4-0", "-gneE5-0", "-gneE2-0", "-gneE6-0"]])
     use_cuda = args.get("use_cuda", True)
-    show_every = args.get("show_every", 25)
+    show_every = args.get("show_every", 100)
 
-    if isinstance(net_file, list):
-        assert len(net_file) == len(prefix_list)
-    elif isinstance(net_file, dict):
-        net_file = [net_file[prefix] for prefix in prefix_list]
-    elif isinstance(net_file, str):
-        net_file = [net_file for prefix in prefix_list]
-
-    if not isinstance(destination[0], list):
-        destination = [destination for i in range(len(prefix_list))]
-    
-    if not isinstance(input_cells_name[0], list):
-        input_cells_name = [input_cells_name for i in range(len(prefix_list))]
-    
     batch_index = 0
 
-    for i in range(len(prefix_list)):
+    for i in range(len(net_file)):
 
-        with open(os.path.join(d.cell_data_path, net_file[i]), 'rb') as f:
+        with open(os.path.join(d.cell_data_path, net_file[i]), "rb") as f:
             net_information = pickle.load(f)
-
-        data_set = network_data(net_information, destination[i], prefix_list[i], args)
-        # data_set.normalize_data()
+        
+        data_set = data_on_network(net_information, destination[i], prefix_list[i], args)
         input_cells = data_set.name_to_id(input_cells_name[i])
         model.set_input_cells(input_cells)
 
@@ -204,7 +184,7 @@ def train(args):
 
         start = time.time()
 
-        meter = run_epoch(args, model, train_loss_function, optimizer, meter, sample_rate)
+        meter = train_epoch(args, model, train_loss_function, optimizer, meter, sample_rate)
 
         end1 = time.time()
 
@@ -240,7 +220,7 @@ def main():
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--config", type=str, default="only_two")
+    parser.add_argument("--config", type=str, default="four_var_train")
 
     args = parser.parse_args()
 

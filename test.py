@@ -10,7 +10,8 @@ from network import network_data, data_on_network
 import dir_manage as d
 from utils import sparselist_to_tensor
 
-basic_conf = os.path.join(d.config_data_path, "large_intersection_test.yaml")
+basic_conf = os.path.join(d.config_data_path, "four_test.yaml")
+show_detail = True
 
 with open(basic_conf, 'rb') as f:
     args = yaml.load(f, Loader=yaml.FullLoader)
@@ -50,6 +51,24 @@ output = model.infer(inputs, adj_list)
 # target = data_set.recovery_data(target)
 # output = data_set.recovery_data(output)
 
+if show_detail:
+    
+    real_data = target[0, :, :, :].detach().cpu().numpy()
+    predict_data = output[0, :, :, :].detach().cpu().numpy()
+
+    for i in range(8):
+        
+        real_cell = real_data[:200, :, i].sum(1)
+        predict_cell = predict_data[:200, :, i].sum(1)
+
+        x = np.array(range(real_cell.shape[0]))
+
+        plt.figure()
+        plt.plot(x, real_cell, label="gt")
+        plt.plot(x, predict_cell, label="pd")
+        plt.legend()
+        plt.savefig("dest" + str(i) + ".png")        
+
 f = torch.nn.MSELoss()
 output = torch.sum(output, dim=3)
 target = torch.sum(target[:, :, :, :args["output_size"]], dim=3)
@@ -59,7 +78,7 @@ max_error_cell = -1
 
 for i in range(output.shape[2]):
     error = f(output[0, :, i], target[0, :, i])
-    if error > 25:
+    if error > 10:
         print(i, error)
     if error > max_error:
         max_error = error
@@ -68,8 +87,8 @@ for i in range(output.shape[2]):
 print(f(output, target))
 print(f(output[:, -1, :], target[:, -1, :]))
 
-real_cell = target[0, :, 186].detach().cpu().numpy()[:200]
-predict_cell = output[0, :, 186].detach().cpu().numpy()[:200]
+real_cell = target[0, :, :].detach().cpu().numpy().sum(1)[:200]
+predict_cell = output[0, :, :].detach().cpu().numpy().sum(1)[:200]
 x = np.array(range(real_cell.shape[0]))
 
 plt.figure()
