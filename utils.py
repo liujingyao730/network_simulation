@@ -24,11 +24,10 @@ def normalize_adj(adj):
 def adj_to_laplace(adj_list):
 
     D_tilde = torch.diag_embed(torch.pow(torch.sum(adj_list, dim=1), -1 / 2))
-    laplace = torch.einsum("tbc,tcd->tbd", D_tilde, adj_list)
-    laplace = torch.einsum("tbc,tcd->tbd", laplace, D_tilde)
+    laplace = torch.bmm(D_tilde, adj_list)
+    laplace = torch.bmm(laplace, D_tilde)
 
     return laplace
-
 
 def show_heat(network_layout, input_data, file="heat_map"):
         

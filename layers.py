@@ -26,8 +26,8 @@ class gcn(nn.Module):
 
     def forward(self, input_data, laplace_list):
 
-        output = torch.einsum("cc,bci->bci", laplace_list, input_data)
-        output = torch.einsum("bci,io->bco", output, self.con_kernal)
+        output = torch.einsum("nm,bmi->bni", laplace_list, input_data)
+        output = torch.einsum("bni,io->bno", output, self.con_kernal)
         output = self.activation(output)
 
         return output

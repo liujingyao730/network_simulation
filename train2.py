@@ -10,7 +10,7 @@ import random
 import time
 import argparse
 
-from model import GCN_GRU, node_encode_attention
+from model import GCN_GRU, node_encode_attention, node_encode_attention_res
 from coder_model import st_node_encoder, st_node_encoder_res
 from network import data_on_network
 import dir_manage as d
@@ -142,6 +142,8 @@ def test_epoch(args, model, loss_function, meter):
 
 def train(args):
 
+    torch.autograd.set_detect_anomaly(True)
+
     with open(os.path.join(d.config_data_path, args.config+".yaml"), 'rb') as f:
         args = yaml.load(f, Loader=yaml.FullLoader)
     
@@ -157,8 +159,8 @@ def train(args):
         log_file.write(key+"  "+str(args[key])+'\n')
 
     # model = GCN_GRU(args)
-    model = node_encode_attention(args)
-    # model = st_node_encoder(args)
+    # model = node_encode_attention_res(args)
+    model = st_node_encoder(args)
 
     train_loss_function = narrow_output_loss(40)
     test_loss_function = torch.nn.MSELoss()
@@ -222,7 +224,7 @@ def main():
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--config", type=str, default="four_var_train")
+    parser.add_argument("--config", type=str, default="four_var_train2")
 
     args = parser.parse_args()
 
