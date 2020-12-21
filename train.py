@@ -10,7 +10,7 @@ import random
 import time
 import argparse
 
-from model import GCN_GRU, node_encode_attention
+from model import GCN_GRU, node_encode_attention, node_encode_attention_res
 from coder_model import st_node_encoder, st_node_encoder_res
 from network import data_on_network
 import dir_manage as d
@@ -157,10 +157,11 @@ def train(args):
         log_file.write(key+"  "+str(args[key])+'\n')
 
     # model = GCN_GRU(args)
-    model = node_encode_attention(args)
-    # model = st_node_encoder(args)
+    # model = node_encode_attention(args)
+    model = st_node_encoder(args)
 
-    train_loss_function = narrow_output_loss(40)
+    train_loss_function = narrow_output_loss(60)
+    # train_loss_function = non_negative_loss()
     test_loss_function = torch.nn.MSELoss()
 
     if args["use_cuda"]:

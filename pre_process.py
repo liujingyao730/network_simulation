@@ -34,6 +34,7 @@ def net_resolve(net_file, pickle_file):
     junction = {}
     tlc = {}
     junction_connection = {}
+    non_signal_connection = []
 
     for child in root:
         
@@ -76,14 +77,13 @@ def net_resolve(net_file, pickle_file):
                 connection_dir = child.attrib["dir"]
                 if "tl" in child.attrib.keys():
                     connection_tlc = child.attrib["tl"]
+                    junction_connection[connection_id] = {"from":connection_from, "to":connection_to, "tlc":connection_tlc, "dir":connection_dir}
                 else:
-                    from_lane = connection_from + "_" + child.attrib["fromLane"]
-                    connection_tlc = junction_connection[from_lane]["tlc"]
-                junction_connection[connection_id] = {"from":connection_from, "to":connection_to, "tlc":connection_tlc, "dir":connection_dir}
+                    non_signal_connection.append([connection_from, connection_to])
 
     junction_cell = {}
     ordinary_cell = {}
-    connection = {}
+    connection = []
     signal_connection = {}
     tlc_time = []
     pass_char = ['y', 'Y', 'g', 'G']
@@ -105,8 +105,17 @@ def net_resolve(net_file, pickle_file):
             ordinary_cell[edge]["cell_id"].append(cell_id)
             cell_start += cell_length
             if former_cell is not None:
-                connection[former_cell] = cell_id
+                connection.append([former_cell, cell_id])
             former_cell = cell_id
+    for pair in non_signal_connection:
+        from_edge = pair[0]
+        to_edge = pair[1]
+        if from_edge not in ordinary_cell.keys() or to_edge not in ordinary_cell.keys():
+            continue
+        from_cell = ordinary_cell[from_edge]["cell_id"][-1]
+        to_cell = ordinary_cell[to_edge]["cell_id"][0]
+        connection.append([from_cell, to_cell])
+
     tlc_index = 0
     for tlc_id in tlc.keys():
         
@@ -125,6 +134,8 @@ def net_resolve(net_file, pickle_file):
             for index in range(len(phase)):
                 if phase[index] in pass_char:
                     inter_lane = junction[tlc_id]["intLanes"][index]
+                    if inter_lane not in junction_connection.keys():
+                        continue
                     from_edge = junction_connection[inter_lane]["from"]
                     to_edge = junction_connection[inter_lane]["to"]
                     con_dir = junction_connection[inter_lane]["dir"]
@@ -403,16 +414,16 @@ def enlarge_gap(base_line, best_distance, keys):
     return base_line
 
 if __name__ == "__main__":
-    net_file = "four_less.net.xml"
+    net_file = "three.net.xml"
     fcd_file = "fcd.xml"
     data_fold = "data"
-    pickle_file = "four_less.pkl"
+    pickle_file = "three_new.pkl"
 
     layout = calculate_layout(net_file, pickle_file, best_distance=50)
 
-    with open("test.pkl", 'rb') as f:
+    with open("three_new.pkl", 'rb') as f:
         net_information = pickle.load(f)
-    basic_conf = basic_conf = os.path.join(d.config_data_path, "large_intersection_test.yaml")
+    basic_conf = basic_conf = os.path.join(d.config_data_path, "three_test.yaml")
     with open(basic_conf, 'rb') as f:
         args = yaml.load(f, Loader=yaml.FullLoader)
 
@@ -428,4 +439,4 @@ if __name__ == "__main__":
     args["dest_number"] = 6
     a = data_on_network(net_information, destiantion, prefix, args)
     inputs, adj_list = a.get_batch()
-    a.show_adj(a.all_adj, network_type=layout, colors=range(a.N), with_label=True, figure_size=(20, 20))
+    a.show_adj(a.all_adj, network_type=layout, colors=range(a.N), with_label=True, figure_size=(15, 10))

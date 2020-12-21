@@ -162,7 +162,8 @@ def train(args):
     # model = node_encode_attention_res(args)
     model = st_node_encoder(args)
 
-    train_loss_function = narrow_output_loss(40)
+    train_loss_function = narrow_output_loss(60)
+    # train_loss_function = non_negative_loss()
     test_loss_function = torch.nn.MSELoss()
 
     if args["use_cuda"]:

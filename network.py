@@ -408,12 +408,9 @@ class data_on_network(object):
 
     def generate_base_adj(self):
 
-        self.rows = [self.cell_index[cell] for cell in self.connection]
-        self.cols = [
-            self.cell_index[self.connection[cell]]
-            for cell in self.connection.keys()
-        ]
-        self.vals = [1 for cell in self.connection.keys()]
+        self.rows = [self.cell_index[pair[0]] for pair in self.connection]
+        self.cols = [self.cell_index[pair[1]] for pair in self.connection]
+        self.vals = [1 for i in range(len(self.connection))]
 
         self.rows.extend([i for i in range(self.N)])
         self.cols.extend([i for i in range(self.N)])
