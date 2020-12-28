@@ -160,7 +160,8 @@ def train(args):
     # model = node_encode_attention(args)
     model = st_node_encoder(args)
 
-    train_loss_function = narrow_output_loss(60)
+    upper_bound = args.get("upper_bound", 90)
+    train_loss_function = narrow_output_loss(upper_bound)
     # train_loss_function = non_negative_loss()
     test_loss_function = torch.nn.MSELoss()
 
@@ -169,7 +170,7 @@ def train(args):
         test_loss_function = test_loss_function.cuda()
         train_loss_function = train_loss_function.cuda()
     
-    optimizer = torch.optim.Adam(model.parameters())
+    optimizer = torch.optim.Adam(model.parameters(), weight_decay=args["weight_decay"])
 
     meter = torchnet.meter.AverageValueMeter()
 

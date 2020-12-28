@@ -16,7 +16,7 @@ temporal_length: 24
 sim_step: 0.1
 delteT: 5
 
-name: three_baseline
+name: coder2__res
 
 prefix:
   - 

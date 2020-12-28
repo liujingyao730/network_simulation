@@ -16,31 +16,32 @@ sim_step: 0.1
 delteT: 5
 batch_size: 1
 
-model_prefix: four_var
-model: 48
+model_prefix: four_baseline
+model: 49
 
 prefix: 
-  - more_6
+  - four7
 
 destination:
   -
-    - gneE4-3
+    - -gneE0-1
+    - -gneE1-1
+    - -gneE2-2
+    - -gneE4-3
     - -gneE5-3
-    - -gneE6-3
-    - gneE7-5
-    - gneE8-1
-    - -gneE9-1
-    - gneE11-2
-    - gneE10-2
+    - -gneE6-1
+    - -gneE8-3
+    - -gneE10-2
 
-net_file: four_more.pkl
+
+net_file: four.pkl
 
 input_cells_name:
-  - -gneE4-0
+  - gneE0-0
+  - gneE1-0
+  - gneE2-0
+  - gneE4-0
   - gneE5-0
   - gneE6-0
-  - -gneE7-0
-  - -gneE8-0
-  - gneE9-0
-  - -gneE11-0
-  - -gneE10-0
+  - gneE8-0
+  - gneE10-0
