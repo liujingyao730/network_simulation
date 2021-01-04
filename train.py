@@ -26,6 +26,9 @@ def train_epoch(args, model, loss_function, optimizer, meter, sample_rate):
     use_cuda = args.get("use_cuda", True)
     grad_clip = args.get("grad_clip", 10)
     show_every = args.get("show_every", 100)
+    dest_weight = args.get("dest_weigh", 1)
+    net_weight = args.get("net_weight", 1)
+    total_weight = args.get("total_weight", 1)
 
     batch_index = 0
 
@@ -68,7 +71,12 @@ def train_epoch(args, model, loss_function, optimizer, meter, sample_rate):
                 torch.sum(outputs, dim=3)
             )
 
-            loss = dest_loss + total_loss
+            net_loss = loss_function(
+                torch.sum(targets[:, :, :, :args["output_size"]], dim=(2, 3)), 
+                torch.sum(outputs, dim=(2, 3))
+            )
+
+            loss = dest_weight * dest_loss + total_weight * total_loss + net_weight * net_loss
 
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
@@ -224,7 +232,7 @@ def main():
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--config", type=str, default="four_var_train")
+    parser.add_argument("--config", type=str, default="four_var_train2")
 
     args = parser.parse_args()
 

@@ -1,0 +1,51 @@
+input_size: 21
+hidden_size: 64
+output_size: 8
+
+use_cuda: True
+num_epochs: 50
+show_every: 100
+weight_decay: 5.e-5
+grad_clip: 10
+sample_rate: 1
+sample_decay: 0.03
+
+init_length: 4
+temporal_length: 700
+sim_step: 0.1
+delteT: 5
+batch_size: 1
+
+model_prefix: four_large_baseline
+model: 46
+
+prefix: 
+  - four_6
+
+destination:
+  -
+    - -gneE0-1
+    - -gneE1-1
+    - -gneE2-2
+    - -gneE4-3
+    - -gneE5-3
+    - -gneE6-1
+    - -gneE12-1
+    - -gneE13-1
+
+
+net_file: four_large.pkl
+
+input_cells_name:
+  - gneE0-0
+  - gneE1-0
+  - gneE2-0
+  - gneE4-0
+  - gneE5-0
+  - gneE6-0
+  - gneE8-0
+  - gneE10-0
+  - gneE12-0
+  - gneE13-0
+  - gneE14-0
+  - gneE15-0
