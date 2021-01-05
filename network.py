@@ -7,6 +7,7 @@ from scipy import sparse
 import pickle
 import torch
 import time
+import queue
 
 import route_conf
 import dir_manage as d
@@ -378,14 +379,15 @@ class data_on_network(object):
 
         self.dest_size = args.get("dest_size", 8)
         assert self.dest_size >= len(self.destination)
-        # dest_size + 通行时间 + cell长度 + 车道数 + 是否路口 + 是否终点
-        self.node_feature_size = self.dest_size + 5
+        # dest_size + 通行时间 + 预期通行时间 + cell长度 + 车道数 + 是否路口 + 是否终点
+        self.node_feature_size = self.dest_size + 6
         self.input_size = self.dest_size + self.node_feature_size
         self.green_time_loc = self.dest_size
-        self.cell_length_loc = self.dest_size + 1
-        self.lane_number_loc = self.dest_size + 2
-        self.is_junction_loc = self.dest_size + 3
-        self.is_end_loc = self.dest_size + 4
+        self.red_time_loc = self.dest_size + 1
+        self.cell_length_loc = self.dest_size + 2
+        self.lane_number_loc = self.dest_size + 3
+        self.is_junction_loc = self.dest_size + 4
+        self.is_end_loc = self.dest_size + 5
 
         self.cell_list = []
         self.lane_number = []
@@ -410,7 +412,7 @@ class data_on_network(object):
 
         self.rows = [self.cell_index[pair[0]] for pair in self.connection]
         self.cols = [self.cell_index[pair[1]] for pair in self.connection]
-        self.vals = [1 for i in range(len(self.connection))]
+        self.vals = [self.lane_number[self.cell_index[pair[0]]] for pair in self.connection]
 
         self.rows.extend([i for i in range(self.N)])
         self.cols.extend([i for i in range(self.N)])
@@ -461,19 +463,36 @@ class data_on_network(object):
 
         self.network_feature = np.zeros((self.N, self.node_feature_size)) - 1
         self.network_feature[:, self.green_time_loc] = 100
+        self.network_feature[:, self.red_time_loc] = 0
         dest_cells = []
 
-        for i in range(self.N):
-            for dest in self.destination:
-                j = self.cell_index[dest]
-                dest_index = self.dest_index[dest]
-                dest_cells.append(j)
-                try:
-                    self.network_feature[i][dest_index] = nx.dijkstra_path_length(
-                        G, source=i, target=j)
-                except nx.exception.NetworkXNoPath:
-                    pass
-        
+        for dest in self.destination:
+            j = self.cell_index[dest]
+            dest_index = self.dest_index[dest]
+            self.network_feature[j][dest_index] = self.lane_number[j]
+            dest_cells.append(j)
+            q = queue.Queue()
+            q.put(j)
+            start = self.all_adj.indptr[j]
+            end = self.all_adj.indptr[j+1]
+            while not q.empty():
+                current_cell = q.get()
+                start = self.all_adj.indptr[current_cell]
+                end = self.all_adj.indptr[current_cell+1]
+                for i in range(start, end):
+                    cell_id = self.all_adj.indices[i]
+                    if cell_id == current_cell:
+                        continue
+                    self.network_feature[cell_id][dest_index] = self.all_adj.data[i]
+                    q.put(cell_id)
+
+        for edge in self.ordinary_cell.keys():
+            
+            cells = [self.cell_index[cell] for cell in self.ordinary_cell[edge]["cell_id"]]
+            last_cell = cells[-1]
+            for cell in cells:
+                self.network_feature[cell, :] = self.network_feature[last_cell, :]
+
         for edge in self.ordinary_cell.keys():
             for cell in self.ordinary_cell[edge]["cell_id"]:
                 cell_id = self.cell_index[cell]
@@ -507,6 +526,10 @@ class data_on_network(object):
                     if start_time <= time_t < end_time:
                         self.adj_with_time[index] += self.loc_adj[junction_id][connect_id]
                         self.network_feature[index, from_id, self.green_time_loc] = end_time - time_t
+                    if start_time > time_t:
+                        self.network_feature[index, from_id, self.red_time_loc] = start_time - time_t
+                    elif time_t >= end_time:
+                        self.network_feature[index, from_id, self.red_time_loc] = cycle[junction_id] - time_t + start_time
 
         # np.save(os.path.join(self.data_fold, self.prefix+'.npy'), self.adj_with_time)
     
