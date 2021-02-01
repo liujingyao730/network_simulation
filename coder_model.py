@@ -14,12 +14,12 @@ class feature_embedding(nn.Module):
         self.dest_size = args["output_size"]
         self.input_size = args["input_size"]
 
-        self.dist_loc = 2 * self.dest_size
-        self.network_size = self.input_size - 2 * self.dest_size
+        self.dist_loc = 3 * self.dest_size
+        self.network_size = self.input_size - 3 * self.dest_size
 
         if gnn == "gcn":
-            self.dest_encoder_forward = gcn(self.dest_size, self.dest_size)
-            self.dest_encoder_backward = gcn(self.dest_size, self.dest_size)
+            self.dest_encoder_forward = gcn(2 * self.dest_size, self.dest_size)
+            self.dest_encoder_backward = gcn(2 * self.dest_size, self.dest_size)
         else:
             raise NotImplementedError
 
@@ -33,11 +33,11 @@ class feature_embedding(nn.Module):
         assert feature == self.input_size
 
         dyn_feature = node_feautre[:, :, :self.dest_size]
-        dist_feature = node_feautre[:, :, self.dest_size:self.dist_loc]
+        struct_feature = node_feautre[:, :, self.dest_size:self.dist_loc]
         stat_feature = node_feautre[:, :, self.dist_loc:]
 
-        dist_code_forward = self.dest_encoder_forward(dist_feature, adj_foward)
-        dist_code_backward = self.dest_encoder_backward(dist_feature, adj_backward)
+        dist_code_forward = self.dest_encoder_forward(struct_feature, adj_foward)
+        dist_code_backward = self.dest_encoder_backward(struct_feature, adj_backward)
         forward_code = torch.mul(dyn_feature, dist_code_forward)
         backward_code = torch.mul(dyn_feature, dist_code_backward)
         input_embedding = torch.cat((forward_code, backward_code), dim=2)
@@ -310,14 +310,14 @@ class st_node_encoder_res(nn.Module):
 if __name__ == "__main__":
 
     args = {}
-    args["input_size"] = 13
-    args["output_size"] = 6
+    args["input_size"] = 30
+    args["output_size"] = 8
     args["gnn"] = "gcn"
 
-    input_data = Variable(torch.rand(17, 8, 40, 13))
+    input_data = Variable(torch.rand(17, 8, 40, 30))
     adj_list = Variable(torch.rand(8, 40, 40))
 
-    model = st_node_encoder_res(args)
+    model = st_node_encoder(args)
     model.set_input_cells([0, 1, 2, 3])
     print('# generator parameters:',
           sum(param.numel() for param in model.parameters()))

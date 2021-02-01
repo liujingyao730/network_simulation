@@ -1,4 +1,4 @@
-input_size: 21
+input_size: 30
 hidden_size: 64
 output_size: 8
 gnn: gcn
@@ -10,21 +10,24 @@ weight_decay: 5.e-5
 grad_clip: 10
 sample_rate: 1
 sample_decay: 0.1
+dest_weight: 1
+net_weight: 0
+total_weight: 1
 
 init_length: 4
 temporal_length: 24
 sim_step: 0.1
 delteT: 5
 
-name: four_large_baseline
+name: new_data
 
 prefix:
   - 
-    - four_1
-    - four_2
-    - four_3
-    - four_4
-    - four_5
+    - four_low1
+    - four_low2
+    - four_low3
+    - four_low4
+    - four_low5
 
 destination:
   -
@@ -58,7 +61,7 @@ input_cells_name:
 
 test_prefix:
   -
-    - four_6
+    - four_low6
 
 test_destination:
   -
@@ -72,7 +75,7 @@ test_destination:
     - -gneE13-1
 
 test_net_file:
-  - four.pkl
+  - four_large.pkl
 
 test_input_cells_name:
   -

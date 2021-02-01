@@ -1,4 +1,4 @@
-input_size: 21
+input_size: 30
 hidden_size: 64
 output_size: 8
 
@@ -16,8 +16,8 @@ sim_step: 0.1
 delteT: 5
 batch_size: 1
 
-model_prefix: four_large_baseline
-model: 46
+model_prefix: four_large_new_data
+model: 43
 
 prefix: 
   - four_6

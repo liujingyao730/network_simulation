@@ -232,7 +232,7 @@ def main():
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--config", type=str, default="four_var_train2")
+    parser.add_argument("--config", type=str, default="four_large_train")
 
     args = parser.parse_args()
 
