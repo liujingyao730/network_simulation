@@ -380,14 +380,15 @@ class data_on_network(object):
         self.dest_size = args.get("dest_size", 8)
         assert self.dest_size >= len(self.destination)
         # dest_size + 通行时间 + 预期通行时间 + cell长度 + 车道数 + 是否路口 + 是否终点
-        self.node_feature_size = self.dest_size + 6
+        self.node_feature_size = self.dest_size*2 + 6
         self.input_size = self.dest_size + self.node_feature_size
-        self.green_time_loc = self.dest_size
-        self.red_time_loc = self.dest_size + 1
-        self.cell_length_loc = self.dest_size + 2
-        self.lane_number_loc = self.dest_size + 3
-        self.is_junction_loc = self.dest_size + 4
-        self.is_end_loc = self.dest_size + 5
+        self.green_time_loc = self.dest_size * 2
+        self.red_time_loc = self.green_time_loc + 1
+        self.cell_length_loc = self.green_time_loc + 2
+        self.lane_number_loc = self.green_time_loc + 3
+        self.is_junction_loc = self.green_time_loc + 4
+        self.is_end_loc = self.green_time_loc + 5
+        self.dir_dict = {'l':1, 'r':3, 's':2}
 
         self.cell_list = []
         self.lane_number = []
@@ -464,34 +465,47 @@ class data_on_network(object):
         self.network_feature = np.zeros((self.N, self.node_feature_size)) - 1
         self.network_feature[:, self.green_time_loc] = 100
         self.network_feature[:, self.red_time_loc] = 0
-        dest_cells = []
+        dest_cells = []               
 
         for dest in self.destination:
             j = self.cell_index[dest]
             dest_index = self.dest_index[dest]
             self.network_feature[j][dest_index] = self.lane_number[j]
+            self.network_feature[j][self.dest_size+dest_index] = self.dir_dict['s']
             dest_cells.append(j)
             q = queue.Queue()
+            dir_q = queue.Queue()
+            lane_q = queue.Queue()
             q.put(j)
+            lane_q.put(self.lane_number[j])
+            dir_q.put(2)
             start = self.all_adj.indptr[j]
             end = self.all_adj.indptr[j+1]
             while not q.empty():
                 current_cell = q.get()
+                current_lane = lane_q.get()
+                current_dir = dir_q.get()
                 start = self.all_adj.indptr[current_cell]
                 end = self.all_adj.indptr[current_cell+1]
                 for i in range(start, end):
                     cell_id = self.all_adj.indices[i]
                     if cell_id == current_cell:
                         continue
-                    self.network_feature[cell_id][dest_index] = self.all_adj.data[i]
-                    q.put(cell_id)
+                    behind_cell = self.cell_list[cell_id]
+                    after_cell = self.cell_list[current_cell]
+                    if behind_cell in self.signal_connection.keys():
+                        connect = self.all_adj.data[i]
+                        c_dir = self.signal_connection[behind_cell][after_cell][3]
+                        c_dir = self.dir_dict[c_dir]
+                    else:
+                        connect = current_lane
+                        c_dir = current_dir
 
-        for edge in self.ordinary_cell.keys():
-            
-            cells = [self.cell_index[cell] for cell in self.ordinary_cell[edge]["cell_id"]]
-            last_cell = cells[-1]
-            for cell in cells:
-                self.network_feature[cell, :] = self.network_feature[last_cell, :]
+                    self.network_feature[cell_id][dest_index] = connect
+                    self.network_feature[cell_id][self.dest_size + dest_index] = c_dir
+                    q.put(cell_id)
+                    lane_q.put(connect)
+                    dir_q.put(c_dir)
 
         for edge in self.ordinary_cell.keys():
             for cell in self.ordinary_cell[edge]["cell_id"]:
