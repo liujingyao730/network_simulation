@@ -1,4 +1,4 @@
-input_size: 30
+input_size: 46
 hidden_size: 64
 output_size: 8
 
@@ -11,13 +11,13 @@ sample_rate: 1
 sample_decay: 0.03
 
 init_length: 4
-temporal_length: 700
+temporal_length: 790
 sim_step: 0.1
 delteT: 5
 batch_size: 1
 
-model_prefix: four_large_new_data
-model: 43
+model_prefix: one_hot_longer
+model: 30
 
 prefix: 
   - four_6

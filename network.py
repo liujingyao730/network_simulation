@@ -379,16 +379,16 @@ class data_on_network(object):
 
         self.dest_size = args.get("dest_size", 8)
         assert self.dest_size >= len(self.destination)
-        # dest_size + 通行时间 + 预期通行时间 + cell长度 + 车道数 + 是否路口 + 是否终点
-        self.node_feature_size = self.dest_size*2 + 6
+        # dest_lane + one_hot_dir + 预期通行时间 + cell长度 + 车道数 + 是否路口 + 是否终点
+        self.node_feature_size = self.dest_size*4 + 6
         self.input_size = self.dest_size + self.node_feature_size
-        self.green_time_loc = self.dest_size * 2
+        self.green_time_loc = self.dest_size * 4
         self.red_time_loc = self.green_time_loc + 1
         self.cell_length_loc = self.green_time_loc + 2
         self.lane_number_loc = self.green_time_loc + 3
         self.is_junction_loc = self.green_time_loc + 4
         self.is_end_loc = self.green_time_loc + 5
-        self.dir_dict = {'l':1, 'r':3, 's':2}
+        self.dir_dict = {'l':1, 'r':2, 's':3}
 
         self.cell_list = []
         self.lane_number = []
@@ -471,7 +471,7 @@ class data_on_network(object):
             j = self.cell_index[dest]
             dest_index = self.dest_index[dest]
             self.network_feature[j][dest_index] = self.lane_number[j]
-            self.network_feature[j][self.dest_size+dest_index] = self.dir_dict['s']
+            self.network_feature[j][self.dest_size*3+dest_index] = 1
             dest_cells.append(j)
             q = queue.Queue()
             dir_q = queue.Queue()
@@ -502,7 +502,7 @@ class data_on_network(object):
                         c_dir = current_dir
 
                     self.network_feature[cell_id][dest_index] = connect
-                    self.network_feature[cell_id][self.dest_size + dest_index] = c_dir
+                    self.network_feature[cell_id][self.dest_size*c_dir + dest_index] = 1
                     q.put(cell_id)
                     lane_q.put(connect)
                     dir_q.put(c_dir)

@@ -1,4 +1,4 @@
-input_size: 30
+input_size: 46
 hidden_size: 64
 output_size: 8
 gnn: gcn
@@ -15,19 +15,19 @@ net_weight: 0
 total_weight: 1
 
 init_length: 4
-temporal_length: 24
+temporal_length: 32
 sim_step: 0.1
 delteT: 5
 
-name: new_data
+name: one_hot_longer
 
 prefix:
   - 
-    - four_low1
-    - four_low2
-    - four_low3
-    - four_low4
-    - four_low5
+    - four_1
+    - four_2
+    - four_3
+    - four_4
+    - four_5
 
 destination:
   -
@@ -61,7 +61,7 @@ input_cells_name:
 
 test_prefix:
   -
-    - four_low6
+    - four_6
 
 test_destination:
   -
