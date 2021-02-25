@@ -67,12 +67,12 @@ def train_epoch(args, model, loss_function, optimizer, meter, sample_rate):
             dest_loss = loss_function(targets[:, :, :, :args["output_size"]], outputs)
 
             total_loss = loss_function(
-                torch.sum(targets[:, :, :, :args["output_size"]], dim=3), 
+                torch.sum(targets[:, :, :, :args["output_size"]], dim=3),
                 torch.sum(outputs, dim=3)
             )
 
             net_loss = loss_function(
-                torch.sum(targets[:, :, :, :args["output_size"]], dim=(2, 3)), 
+                torch.sum(targets[:, :, :, :args["output_size"]], dim=(2, 3)),
                 torch.sum(outputs, dim=(2, 3))
             )
 

@@ -414,16 +414,16 @@ def enlarge_gap(base_line, best_distance, keys):
     return base_line
 
 if __name__ == "__main__":
-    net_file = "three.net.xml"
+    net_file = "four_large.net.xml"
     fcd_file = "fcd.xml"
     data_fold = "data"
-    pickle_file = "three_new.pkl"
+    pickle_file = "test.pkl"
 
     layout = calculate_layout(net_file, pickle_file, best_distance=50)
 
-    with open("three_new.pkl", 'rb') as f:
+    with open("test.pkl", 'rb') as f:
         net_information = pickle.load(f)
-    basic_conf = basic_conf = os.path.join(d.config_data_path, "three_test.yaml")
+    basic_conf = basic_conf = os.path.join(d.config_data_path, "four_large_test.yaml")
     with open(basic_conf, 'rb') as f:
         args = yaml.load(f, Loader=yaml.FullLoader)
 

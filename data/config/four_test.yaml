@@ -17,7 +17,7 @@ delteT: 5
 batch_size: 1
 
 model_prefix: four_baseline
-model: 49
+model: 45
 
 prefix: 
   - four7

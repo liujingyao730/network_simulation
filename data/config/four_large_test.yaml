@@ -11,13 +11,13 @@ sample_rate: 1
 sample_decay: 0.03
 
 init_length: 4
-temporal_length: 790
+temporal_length: 750
 sim_step: 0.1
 delteT: 5
 batch_size: 1
 
 model_prefix: one_hot_longer
-model: 30
+model: 35
 
 prefix: 
   - four_6

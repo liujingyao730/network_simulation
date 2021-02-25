@@ -12,11 +12,11 @@ sample_rate: 1
 sample_decay: 0.1
 
 init_length: 4
-temporal_length: 48
+temporal_length: 24
 sim_step: 0.1
 delteT: 5
 
-name: four_baseline
+name: four_net_dest
 
 prefix:
   - 
