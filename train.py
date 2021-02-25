@@ -10,8 +10,8 @@ import random
 import time
 import argparse
 
-from model import GCN_GRU, node_encode_attention, node_encode_attention_res
-from coder_model import st_node_encoder, st_node_encoder_res
+from model import GCN_GRU, node_encode_attention
+from coder_model import st_node_encoder
 from network import data_on_network
 import dir_manage as d
 from utils import sparselist_to_tensor

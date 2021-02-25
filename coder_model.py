@@ -13,17 +13,15 @@ class feature_embedding(nn.Module):
 
         self.dest_size = args["output_size"]
         self.input_size = args["input_size"]
-
-        self.dist_loc = 5 * self.dest_size
-        self.network_size = self.input_size - 5 * self.dest_size
+        self.struct_size = args["struct_size"]
 
         if gnn == "gcn":
-            self.dest_encoder_forward = gcn(4 * self.dest_size, self.dest_size)
-            self.dest_encoder_backward = gcn(4 * self.dest_size, self.dest_size)
+            self.dest_encoder_forward = gcn(self.struct_size-self.dest_size, self.dest_size)
+            self.dest_encoder_backward = gcn(self.struct_size-self.dest_size, self.dest_size)
         else:
             raise NotImplementedError
 
-        self.feature_embedding_layer = torch.nn.Linear(self.network_size, 2 * self.dest_size)
+        self.feature_embedding_layer = torch.nn.Linear(self.input_size-self.struct_size, 2 * self.dest_size)
         self.sigmoid = torch.nn.Sigmoid()
     
     def forward(self, node_feautre, adj_foward, adj_backward):
@@ -33,8 +31,8 @@ class feature_embedding(nn.Module):
         assert feature == self.input_size
 
         dyn_feature = node_feautre[:, :, :self.dest_size]
-        struct_feature = node_feautre[:, :, self.dest_size:self.dist_loc]
-        stat_feature = node_feautre[:, :, self.dist_loc:]
+        struct_feature = node_feautre[:, :, self.dest_size:self.struct_size]
+        stat_feature = node_feautre[:, :, self.struct_size:]
 
         dist_code_forward = self.dest_encoder_forward(struct_feature, adj_foward)
         dist_code_backward = self.dest_encoder_backward(struct_feature, adj_backward)
@@ -59,9 +57,12 @@ class st_node_encoder(nn.Module):
         self.hidden_size = args.get("hidden_size", 64)
         self.init_length = args.get("init_length", 4)
         self.input_cells = None
+        args["struct_size"] = 5 * self.dest_size
 
         self.gnn_type = args.get("gnn", "gcn")
-        self.feature_embedding_layer = feature_embedding(args, self.gnn_type)
+        self.feature_embedding_layer = feature_embedding(
+            args, self.gnn_type
+        )
         if self.gnn_type == "gcn":
             self.init_graph = gcn(self.input_size, self.hidden_size)
             self.forward_gnn = gcn(self.hidden_size, self.hidden_size)

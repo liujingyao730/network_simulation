@@ -379,7 +379,7 @@ class data_on_network(object):
 
         self.dest_size = args.get("dest_size", 8)
         assert self.dest_size >= len(self.destination)
-        # dest_lane + one_hot_dir + 预期通行时间 + cell长度 + 车道数 + 是否路口 + 是否终点
+        # dest_lane + one_hot_dir + 距离绿灯结束时间 + 距离红灯结束时间 + cell长度 + 车道数 + 是否路口 + 是否终点
         self.node_feature_size = self.dest_size*4 + 6
         self.input_size = self.dest_size + self.node_feature_size
         self.green_time_loc = self.dest_size * 4

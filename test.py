@@ -5,7 +5,7 @@ import os
 import yaml
 import matplotlib.pyplot as plt
 
-from model import GCN_GRU, node_encode_attention, node_encode_attention_res
+from model import GCN_GRU, node_encode_attention
 from coder_model import st_node_encoder
 from network import network_data, data_on_network
 import dir_manage as d
@@ -93,8 +93,8 @@ print("max error ", max_error, " in cell ", max_error_cell)
 print(f(output, target))
 print(f(output[:, -1, :], target[:, -1, :]))
 
-real_cell = target[0, :, 24].detach().cpu().numpy()[200:600]
-predict_cell = output[0, :, 24].detach().cpu().numpy()[200:600]
+real_cell = target[0, :, :].detach().cpu().numpy().sum(1)
+predict_cell = output[0, :, :].detach().cpu().numpy().sum(1)
 x = np.array(range(real_cell.shape[0]))
 
 plt.figure(figsize=(10,4))
