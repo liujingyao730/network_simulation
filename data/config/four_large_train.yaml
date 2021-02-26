@@ -19,7 +19,7 @@ temporal_length: 32
 sim_step: 0.1
 delteT: 5
 
-name: one_hot_longer
+name: coder_on_dir
 
 prefix:
   - 
