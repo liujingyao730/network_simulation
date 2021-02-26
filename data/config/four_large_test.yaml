@@ -17,10 +17,15 @@ delteT: 5
 batch_size: 1
 
 model_prefix: one_hot_longer
-model: 35
+model: 22
 
 prefix: 
-  - four_6
+  - four_low3
+
+show_cell: 49
+show_start: 0
+show_end: 600
+plot: True
 
 destination:
   -
