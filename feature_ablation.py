@@ -20,7 +20,7 @@ class non_dir_model(nn.Module):
 
         self.gnn_type = args.get("gnn", "gcn")
         self.feature_embedding_layer = feature_embedding(
-            {"input_size":self.input_size, "output_size":self.dest_size, "struct_size":2*self.dest_size}, 
+            {"input_size":self.input_size, "output_size":self.dest_size, "struct_size":2*self.dest_size},
             self.gnn_type)
         if self.gnn_type == "gcn":
             self.init_graph = gcn(self.input_size, self.hidden_size)

@@ -16,13 +16,14 @@ sim_step: 0.1
 delteT: 5
 batch_size: 1
 
-model_prefix: one_hot_longer
-model: 22
+model_type: coder_on_dir
+model_prefix: coder_on_dir
+model: 46
 
 prefix: 
-  - four_low3
+  - four_5
 
-show_cell: 49
+show_cell: 
 show_start: 0
 show_end: 600
 plot: True

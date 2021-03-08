@@ -10,9 +10,11 @@ basic_conf = os.path.join(d.config_data_path, "four_large_test.yaml")
 with open(basic_conf, 'rb') as f:
     args = yaml.load(f, Loader=yaml.FullLoader)
 
-model_dict = {"st_node_encoder":"one_hot_longer", "non_dir_model":"non_dir"}
+# model_dict = {"st_node_encoder":"one_hot_longer", "non_dir_model":"non_dir"}
+model_dict = {"coder_on_dir":"128_hidden"}
 data_prefix = ["four_low3", "four_low5", "four_6", "four_5"]
-model_result = {"st_node_encoder": np.zeros((30, 4)), "non_dir_model": np.zeros((30, 4))}
+# model_result = {"st_node_encoder": np.zeros((30, 4)), "non_dir_model": np.zeros((30, 4))}
+model_result = {"coder_on_dir": np.zeros((30, 4))}
 model_range = list(range(20, 50))
 args["plot"] = False
 
@@ -27,8 +29,10 @@ for model_type in model_dict.keys():
             args["prefix"] = [data_prefix[j]]
             model_result[model_type][i-20, j] = test_model(args)
 
-print(model_result["st_node_encoder"])
-print(model_result["non_dir_model"])
+# print(model_result["st_node_encoder"])
+# print(model_result["non_dir_model"])
+print(model_result["coder_on_dir"])
 
-np.save("st_node_encoder.npy", model_result["st_node_encoder"])
-np.save("non_dir_model", model_result["non_dir_model"])
+# np.save("st_node_encoder.npy", model_result["st_node_encoder"])
+# np.save("non_dir_model.npy", model_result["non_dir_model"])
+np.save("128_hidden.npy", model_result["coder_on_dir"])

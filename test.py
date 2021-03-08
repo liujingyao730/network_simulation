@@ -6,7 +6,7 @@ import yaml
 import matplotlib.pyplot as plt
 
 from model import GCN_GRU, node_encode_attention
-from coder_model import st_node_encoder
+from coder_model import st_node_encoder, coder_on_dir
 from feature_ablation import non_dir_model
 from network import network_data, data_on_network
 import dir_manage as d
@@ -40,6 +40,10 @@ def test_model(args):
         model = st_node_encoder(args)
     elif model_type == "non_dir_model":
         model = non_dir_model(args)
+    elif model_type == "coder_on_dir":
+        model = coder_on_dir(args)
+    else:
+        raise NotImplementedError
     model_file = os.path.join(d.log_path, args["model_prefix"], str(args["model"])+'.tar')
     checkpoint = torch.load(model_file)
     model.load_state_dict(checkpoint["state_dict"])
