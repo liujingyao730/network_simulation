@@ -188,9 +188,19 @@ class attention_on_node(nn.Module):
 
         self.dest_size = args["output_size"]
         self.encoding_size = args["encoding_size"]
+        self.gnn_type = args.get("gnn", "gcn")
         
-        self.encoder_forward = gcn(self.encoding_size, self.dest_size)
-        self.encoder_backward = gcn(self.encoding_size, self.dest_size)
+        if self.gnn_type == "gcn":
+            self.encoder_forward = gcn(self.encoding_size, self.dest_size)
+            self.encoder_backward = gcn(self.encoding_size, self.dest_size)
+        elif self.gnn_type == "gat":
+            self.encoder_forward = gat(self.encoding_size, self.dest_size)
+            self.encoder_backward = gat(self.encoding_size, self.dest_size)
+        elif self.gnn_type == "dcn":
+            self.encoder_backward = dcn(self.encoding_size, self.dest_size)
+            self.encoder_forward = dcn(self.encoding_size, self.dest_size)
+        else:
+            raise NotImplementedError
 
         self.softmax = nn.Softmax(dim=2)
     
