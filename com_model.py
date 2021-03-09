@@ -42,7 +42,7 @@ class replaceable_model(nn.Module):
         elif self.gnn_type == "dcn":
             self.init_graph = dcn(self.input_size, self.hidden_size)
             self.forward_gnn = dcn(self.hidden_size, self.hidden_size)
-            self.backward_gnn = dcn(self.hidden_size, self.hidden_size) 
+            self.backward_gnn = dcn(self.hidden_size, self.hidden_size)
         else:
             raise NotImplementedError
         self.sptial_merge = nn.Linear(2*self.hidden_size, self.hidden_size)

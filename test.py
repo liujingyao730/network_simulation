@@ -83,7 +83,7 @@ def test_model(args):
             plt.plot(x, real_cell, label="gt")
             plt.plot(x, predict_cell, label="pd")
             plt.legend()
-            plt.savefig("dest" + str(i) + ".png")        
+            plt.savefig("dest" + str(i) + ".png")
 
     f = torch.nn.MSELoss()
     output = torch.sum(output, dim=3)
