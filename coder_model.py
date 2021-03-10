@@ -299,6 +299,10 @@ class coder_on_dir(nn.Module):
             )
             tmp_input = torch.cat((lane_number_embedding, dir_embedding), dim=2)
 
+            state_info = self.state_gate(state_feature)
+            state_info = self.sigmoid(state_info)
+            tmp_input = tmp_input.mul(state_info)
+
             forward_h = self.forward_gnn(hidden, laplace_list_forward[i, :, :])
             backward_h = self.backward_gnn(hidden, laplace_list_backward[i, :, :])
 
@@ -351,6 +355,10 @@ class coder_on_dir(nn.Module):
                 laplace_list_forward[i, :, :], laplace_list_backward[i, :, :]
             )
             tmp_input = torch.cat((lane_number_embedding, dir_embedding), dim=2)
+
+            state_info = self.state_gate(state_feature)
+            state_info = self.sigmoid(state_info)
+            tmp_input = tmp_input.mul(state_info)
 
             forward_h = self.forward_gnn(hidden, laplace_list_forward[i, :, :])
             backward_h = self.backward_gnn(hidden, laplace_list_backward[i, :, :])
