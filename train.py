@@ -12,6 +12,7 @@ import argparse
 
 from model import GCN_GRU, node_encode_attention
 from coder_model import st_node_encoder, coder_on_dir
+from com_model import replaceable_model
 from network import data_on_network
 import dir_manage as d
 from utils import sparselist_to_tensor
@@ -167,7 +168,8 @@ def train(args):
     # model = GCN_GRU(args)
     # model = node_encode_attention(args)
     # model = st_node_encoder(args)
-    model = coder_on_dir(args)
+    # model = coder_on_dir(args)
+    model = replaceable_model(args)
 
     upper_bound = args.get("upper_bound", 90)
     train_loss_function = narrow_output_loss(upper_bound)
