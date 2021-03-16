@@ -41,6 +41,8 @@ class non_dir_model(nn.Module):
         self.rnn_type = args.get("rnn", "gru")
         if self.rnn_type == "gru":
             self.temporal_cell = nn.GRUCell(2 * self.dest_size, self.hidden_size)
+        elif self.rnn_type == "lstm":
+            self.temporal_cell = nn.LSTMCell(2 * self.dest_size, self.hidden_size)
         else:
             raise NotImplementedError
         
@@ -70,6 +72,8 @@ class non_dir_model(nn.Module):
         laplace_list_backward = adj_to_laplace(torch.transpose(adj_list, 1, 2))
 
         hidden = self.init_graph(input_data[:, 0, :, :], laplace_list_forward[0, :, :])
+        if self.rnn_type == "lstm":
+            c = Variable(input_data.data.new(batch * cell, self.hidden_size).fill_(0).float())
 
         for i in range(temporal - 1):
 
@@ -80,10 +84,19 @@ class non_dir_model(nn.Module):
 
             h_space = self.sptial_merge(torch.cat((forward_h, backward_h), dim=2))
 
-            hidden = self.temporal_cell(
-                torch.reshape(tmp_input, (batch * cell, 2 * self.dest_size)),
-                torch.reshape(h_space, (batch * cell, self.hidden_size))
-            )
+            if self.rnn_type == "gru":
+                hidden = self.temporal_cell(
+                    torch.reshape(tmp_input, (batch * cell, 2 * self.dest_size)),
+                    torch.reshape(h_space, (batch * cell, self.hidden_size))
+                )
+            elif self.rnn_type == "lstm":
+                hidden, c = self.temporal_cell(
+                    torch.reshape(tmp_input, (batch * cell, 2 * self.dest_size)),
+                    (
+                        torch.reshape(h_space, (batch * cell, self.hidden_size)),
+                        c
+                    )
+                )
             hidden = hidden.view(batch, cell, self.hidden_size)
 
             if i >= self.init_length:
@@ -109,6 +122,8 @@ class non_dir_model(nn.Module):
         laplace_list_backward = adj_to_laplace(torch.transpose(adj_list, 1, 2))
 
         hidden = self.init_graph(input_data[:, 0, :, :], laplace_list_forward[0, :, :])
+        if self.rnn_type == "lstm":
+            c = Variable(input_data.data.new(batch * cell, self.hidden_size).fill_(0).float())
 
         inputs = input_data[:, 0, :, :]
 
@@ -121,10 +136,19 @@ class non_dir_model(nn.Module):
 
             h_space = self.sptial_merge(torch.cat((forward_h, backward_h), dim=2))
 
-            hidden = self.temporal_cell(
-                torch.reshape(tmp_input, (batch * cell, 2 * self.dest_size)),
-                torch.reshape(h_space, (batch * cell, self.hidden_size))
-            )
+            if self.rnn_type == "gru":
+                hidden = self.temporal_cell(
+                    torch.reshape(tmp_input, (batch * cell, 2 * self.dest_size)),
+                    torch.reshape(h_space, (batch * cell, self.hidden_size))
+                )
+            elif self.rnn_type == "lstm":
+                hidden, c = self.temporal_cell(
+                    torch.reshape(tmp_input, (batch * cell, 2 * self.dest_size)),
+                    (
+                        torch.reshape(h_space, (batch * cell, self.hidden_size)),
+                        c
+                    )
+                )
             hidden = hidden.view(batch, cell, self.hidden_size)
 
             inputs = inputs * 0

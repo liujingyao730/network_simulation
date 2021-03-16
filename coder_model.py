@@ -301,7 +301,7 @@ class coder_on_dir(nn.Module):
 
             state_info = self.state_gate(state_feature)
             state_info = self.sigmoid(state_info)
-            tmp_input = tmp_input.mul(state_info)
+            tmp_input = torch.mul(tmp_input, state_info)
 
             forward_h = self.forward_gnn(hidden, laplace_list_forward[i, :, :])
             backward_h = self.backward_gnn(hidden, laplace_list_backward[i, :, :])
@@ -358,7 +358,7 @@ class coder_on_dir(nn.Module):
 
             state_info = self.state_gate(state_feature)
             state_info = self.sigmoid(state_info)
-            tmp_input = tmp_input.mul(state_info)
+            tmp_input = torch.mul(tmp_input, state_info)
 
             forward_h = self.forward_gnn(hidden, laplace_list_forward[i, :, :])
             backward_h = self.backward_gnn(hidden, laplace_list_backward[i, :, :])

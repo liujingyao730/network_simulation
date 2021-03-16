@@ -1,6 +1,6 @@
 import xml.etree.cElementTree as etree
 import pandas as pd
-import os 
+import os
 import seaborn as sns
 import numpy as np
 from numpy.random import randn
@@ -414,7 +414,7 @@ def enlarge_gap(base_line, best_distance, keys):
     return base_line
 
 if __name__ == "__main__":
-    net_file = "four_large.net.xml"
+    net_file = "four_test1.net.xml"
     fcd_file = "fcd.xml"
     data_fold = "data"
     pickle_file = "test.pkl"
@@ -423,7 +423,7 @@ if __name__ == "__main__":
 
     with open("test.pkl", 'rb') as f:
         net_information = pickle.load(f)
-    basic_conf = basic_conf = os.path.join(d.config_data_path, "four_large_test.yaml")
+    basic_conf = basic_conf = os.path.join(d.config_data_path, "four_test1.yaml")
     with open(basic_conf, 'rb') as f:
         args = yaml.load(f, Loader=yaml.FullLoader)
 
@@ -439,4 +439,4 @@ if __name__ == "__main__":
     args["dest_number"] = 6
     a = data_on_network(net_information, destiantion, prefix, args)
     inputs, adj_list = a.get_batch()
-    a.show_adj(a.all_adj, network_type=layout, colors=range(a.N), with_label=True, figure_size=(15, 10))
+    a.show_adj(a.all_adj, network_type=layout, colors=a.network_feature[0, :, a.is_junction_loc], with_label=True, figure_size=(15, 10))
