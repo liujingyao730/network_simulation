@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 
 from model import GCN_GRU, node_encode_attention
 from coder_model import st_node_encoder, coder_on_dir
-from com_model import replaceable_model
+from com_model import replaceable_model,dyn_embedding
 from feature_ablation import non_dir_model
 from network import network_data, data_on_network
 import dir_manage as d
@@ -45,6 +45,8 @@ def test_model(args):
         model = coder_on_dir(args)
     elif model_type == "replaceable_model":
         model = replaceable_model(args)
+    elif model_type == "dyn_embedding":
+        model = dyn_embedding(args)
     else:
         raise NotImplementedError
     model_file = os.path.join(d.log_path, args["model_prefix"], str(args["model"])+'.tar')
@@ -132,7 +134,7 @@ def test_model(args):
 
 if __name__ == "__main__":
 
-    basic_conf = os.path.join(d.config_data_path, "four_test2.yaml")
+    basic_conf = os.path.join(d.config_data_path, "four_test1.yaml")
 
     with open(basic_conf, 'rb') as f:
         args = yaml.load(f, Loader=yaml.FullLoader)

@@ -1,8 +1,9 @@
 input_size: 46
-hidden_size: 64
+hidden_size: 128
+batch_size: 
 output_size: 8
 gnn: gcn
-rnn: gru
+rnn: lstm
 
 use_cuda: True
 num_epochs: 50
@@ -12,23 +13,25 @@ grad_clip: 10
 sample_rate: 1
 sample_decay: 0.1
 dest_weight: 1
+dest_increase: 0.01 
 net_weight: 0
 total_weight: 1
+total_decay: 0.01
 
 init_length: 4
 temporal_length: 28
 sim_step: 0.1
 delteT: 5
 
-name: low_flow_data
+name: mix_data_change_weight
 
 prefix:
   - 
     - four_low1
     - four_low2
-    - four_low3
+    - four_3
     - four_low4
-    - four_low5
+    - four_5
 
 destination:
   -
@@ -62,7 +65,7 @@ input_cells_name:
 
 test_prefix:
   -
-    - four_low6
+    - four_6
 
 test_destination:
   -

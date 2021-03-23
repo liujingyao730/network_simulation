@@ -1,6 +1,8 @@
 input_size: 46
 hidden_size: 128
 output_size: 8
+gnn: gcn
+rnn: lstm
 
 use_cuda: True
 num_epochs: 50
@@ -11,19 +13,19 @@ sample_rate: 1
 sample_decay: 0.03
 
 init_length: 4
-temporal_length: 600
+temporal_length: 730
 sim_step: 0.1
 delteT: 5
 batch_size: 1
 
-model_type: coder_on_dir
-model_prefix: 128_hidden
-model: 49
+model_type: replaceable_model
+model_prefix: mix_data_128
+model: 43
 
 prefix: 
-  - four_test1_mid
+  - four_test1_high
 
-show_cell: 37
+show_cell: 
 show_start: 0
 show_end: 600
 plot: True

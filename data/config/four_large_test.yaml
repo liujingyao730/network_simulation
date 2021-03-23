@@ -1,6 +1,8 @@
 input_size: 46
-hidden_size: 64
+hidden_size: 128
 output_size: 8
+gnn: gcn
+rnn: lstm
 
 use_cuda: True
 num_epochs: 50
@@ -16,17 +18,18 @@ sim_step: 0.1
 delteT: 5
 batch_size: 1
 
-model_type: coder_on_dir
-model_prefix: coder_on_dir
-model: 46
+model_type: replaceable_model
+model_prefix: mix_data_128
+model: 43
 
 prefix: 
-  - four_5
+  - four_6
 
 show_cell: 
 show_start: 0
-show_end: 600
+show_end: 750
 plot: True
+show_detail: False
 
 destination:
   -
