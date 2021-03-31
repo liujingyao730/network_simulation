@@ -233,10 +233,11 @@ def train(args):
             "optimizer_state_dict": optimizer.state_dict()
         }, os.path.join(record_fold, str(epoch)+'.tar'))
 
-        args["dest_weight"] = min(args["dest_weight"]+args["dest_increase"], 2)
+        args["dest_weight"] += args["dest_increase"]
         args["total_weight"] = max(args["total_weight"]-args["total_decay"], 0)
 
-        # args["temporal_length"] = int(epoch / 10) * 0.5 * length + length
+        # args["temporal_length"] = int(int(epoch / 10) * 0.5 * length + length)
+        # print(args["temporal_length"])
     
     print("best epoch {}, best loss {}".format(best_epoch, best_loss))
     log_file.write("best epoch {}, best loss {}\n".format(best_epoch, best_loss))

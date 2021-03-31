@@ -417,7 +417,8 @@ class data_on_network(object):
 
         self.rows.extend([i for i in range(self.N)])
         self.cols.extend([i for i in range(self.N)])
-        self.vals.extend([self.lane_number[i] for i in range(self.N)])
+        # self.vals.extend([self.lane_number[i] for i in range(self.N)])
+        self.vals.extend([1 for i in range(self.N)])
 
         self.base_adj = sparse.csc_matrix((self.vals, (self.rows, self.cols)),
                                           shape=(self.N, self.N))
@@ -436,7 +437,8 @@ class data_on_network(object):
                 end = self.signal_connection[from_cell][to_cell][1]
                 con_dir = self.signal_connection[from_cell][to_cell][3]
 
-                weight = self.signal_connection[from_cell][to_cell][4]
+                # weight = self.signal_connection[from_cell][to_cell][4]
+                weight = 1
 
                 self.intervals[junction_id].append(
                     [start, end, from_id, to_id])
@@ -465,7 +467,7 @@ class data_on_network(object):
         self.network_feature = np.zeros((self.N, self.node_feature_size)) - 1
         self.network_feature[:, self.green_time_loc] = 100
         self.network_feature[:, self.red_time_loc] = 0
-        dest_cells = []               
+        dest_cells = []
 
         for dest in self.destination:
             j = self.cell_index[dest]
