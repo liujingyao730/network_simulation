@@ -13,6 +13,7 @@ import argparse
 from model import GCN_GRU, node_encode_attention
 from coder_model import st_node_encoder, coder_on_dir
 from com_model import replaceable_model, dyn_embedding
+from struct_ablation import single_attention, single_attention_non_gate, baseline
 from feature_ablation import non_dir_model
 from network import data_on_network
 import dir_manage as d
@@ -166,13 +167,12 @@ def train(args):
         print(key, " ", args[key])
         log_file.write(key+"  "+str(args[key])+'\n')
 
-    # model = GCN_GRU(args)
-    # model = node_encode_attention(args)
-    # model = st_node_encoder(args)
-    # model = coder_on_dir(args)
-    model = replaceable_model(args)
+    # model = replaceable_model(args)
     # model = non_dir_model(args)
     # model = dyn_embedding(args)
+    model = single_attention(args)
+    # model = single_attention_non_gate(args)
+    # model = baseline(args)
 
     length = args["temporal_length"]
 

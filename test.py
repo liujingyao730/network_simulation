@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from model import GCN_GRU, node_encode_attention
 from coder_model import st_node_encoder, coder_on_dir
 from com_model import replaceable_model,dyn_embedding
+from struct_ablation import single_attention, single_attention_non_gate, baseline
 from feature_ablation import non_dir_model
 from network import network_data, data_on_network
 import dir_manage as d
@@ -28,25 +29,23 @@ def test_model(args):
     target = inputs[:, args["init_length"]+1:, :, :]
 
     '''
-    net_type = pp.calculate_layout("four_large.net.xml", "test.pkl")
+    net_type = pp.calculate_layout("four_test2.net.xml", "test.pkl")
     for i in range(len(adj_list)):
         print(i)
         data_set.show_adj(adj_list[i+args["init_length"]+1], network_type=net_type, with_label=True, colors=np.around(target[0, i, :, 17], decimals=1))
     '''
     # model = GCN_GRU(args)
     model_type = args.get("model_type", "st_node_encoder")
-    if model_type == "node_encode_attention":
-        model = node_encode_attention(args)
-    elif model_type == "st_node_encoder":
-        model = st_node_encoder(args)
-    elif model_type == "non_dir_model":
-        model = non_dir_model(args)
-    elif model_type == "coder_on_dir":
-        model = coder_on_dir(args)
-    elif model_type == "replaceable_model":
+    if model_type == "replaceable_model":
         model = replaceable_model(args)
     elif model_type == "dyn_embedding":
         model = dyn_embedding(args)
+    elif model_type == "single_attention":
+        model = single_attention(args)
+    elif model_type == "single_attention_non_gate":
+        model = single_attention_non_gate(args)
+    elif model_type == "baseline":
+        model = baseline(args)
     else:
         raise NotImplementedError
     model_file = os.path.join(d.log_path, args["model_prefix"], str(args["model"])+'.tar')
@@ -134,7 +133,7 @@ def test_model(args):
 
 if __name__ == "__main__":
 
-    basic_conf = os.path.join(d.config_data_path, "four_test1.yaml")
+    basic_conf = os.path.join(d.config_data_path, "four_large_test.yaml")
 
     with open(basic_conf, 'rb') as f:
         args = yaml.load(f, Loader=yaml.FullLoader)
