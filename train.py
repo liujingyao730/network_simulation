@@ -170,9 +170,9 @@ def train(args):
     # model = replaceable_model(args)
     # model = non_dir_model(args)
     # model = dyn_embedding(args)
-    model = single_attention(args)
+    # model = single_attention(args)
     # model = single_attention_non_gate(args)
-    # model = baseline(args)
+    model = baseline(args)
 
     length = args["temporal_length"]
 
