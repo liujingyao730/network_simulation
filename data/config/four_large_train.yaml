@@ -1,6 +1,6 @@
 input_size: 46
-hidden_size: 128
-batch_size: 
+hidden_size: 256
+batch_size: 22
 output_size: 8
 gnn: gcn
 rnn: lstm
@@ -12,26 +12,26 @@ weight_decay: 5.e-5
 grad_clip: 10
 sample_rate: 1
 sample_decay: 0.1
-dest_weight: 1
-dest_increase: 0.01 
+dest_weight: 2
+dest_increase: 0
 net_weight: 0
 total_weight: 1
-total_decay: 0.01
+total_decay: 0
 
 init_length: 4
 temporal_length: 28
 sim_step: 0.1
-delteT: 5
+deltaT: 5
 
-name: mix_data_change_weight
+name: weight_test1
 
 prefix:
   - 
     - four_low1
     - four_low2
     - four_3
-    - four_low4
-    - four_5
+    - four_4
+    - four_low5
 
 destination:
   -

@@ -1,5 +1,5 @@
 input_size: 46
-hidden_size: 128
+hidden_size: 256
 output_size: 8
 gnn: gcn
 rnn: lstm
@@ -13,21 +13,22 @@ sample_rate: 1
 sample_decay: 0.03
 
 init_length: 4
-temporal_length: 750
+temporal_length: 900
+temporal_extend: 300
 sim_step: 0.1
-delteT: 5
+deltaT: 5
 batch_size: 1
 
 model_type: replaceable_model
-model_prefix: mix_data_128
-model: 43
+model_prefix: change_weight_3
+model: 47
 
 prefix: 
   - four_6
 
 show_cell: 
 show_start: 0
-show_end: 750
+show_end: 896
 plot: True
 show_detail: False
 

@@ -574,7 +574,7 @@ class data_on_network(object):
             self.data[i] = data
         self.data = np.array(self.data)
 
-        self.data = np.pad(self.data, pad_width=((0, 0), (0, self.temporal_extend*self.sim_step), (0, 0), (0, 0)))
+        self.data = np.pad(self.data, pad_width=((0, 0), (0, int(self.temporal_extend * self.deltaT/self.sim_step)), (0, 0), (0, 0)), mode="constant")
 
         assert self.step * self.temporal_length < self.data.shape[1]
 

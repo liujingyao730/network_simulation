@@ -110,14 +110,26 @@ def test_model(args):
     print(ave_error)
     print(last_error)
 
+    for i in range(args["temporal_length"]-100, args["temporal_length"]):
+        if torch.max(output[0, i, :]) < 1:
+            output_empty = i
+            break
+    for i in range(args["temporal_length"]-100, args["temporal_length"]):
+        if torch.max(target[0, i, :]) < 1:
+            target_empty = i
+            break
+    
+    print("output empty at ", output_empty*args["deltaT"])
+    print("target empty at ", target_empty*args["deltaT"])
+
     if args.get("plot", False):
         show_cell = args.get("show_cell", None)
+        start = args.get("show_start", 0)
+        end = args.get("show_end", 400)
         if show_cell is None:
-            real_cell = target[0, :, :].detach().cpu().numpy().sum(1)
-            predict_cell = output[0, :, :].detach().cpu().numpy().sum(1)
+            real_cell = target[0, start:end, :].detach().cpu().numpy().sum(1)
+            predict_cell = output[0, start:end, :].detach().cpu().numpy().sum(1)
         else:
-            start = args.get("show_start", 0)
-            end = args.get("show_end", 400)
             real_cell = target[0, :, show_cell].detach().cpu().numpy()[start:end]
             predict_cell = output[0, :, show_cell].detach().cpu().numpy()[start:end]
         x = np.array(range(real_cell.shape[0]))
