@@ -110,17 +110,19 @@ def test_model(args):
     print(ave_error)
     print(last_error)
 
-    for i in range(args["temporal_length"]-100, args["temporal_length"]):
-        if torch.max(output[0, i, :]) < 1:
-            output_empty = i
-            break
-    for i in range(args["temporal_length"]-100, args["temporal_length"]):
-        if torch.max(target[0, i, :]) < 1:
-            target_empty = i
-            break
-    
-    print("output empty at ", output_empty*args["deltaT"])
-    print("target empty at ", target_empty*args["deltaT"])
+    get_eva_time = args.get("get_eva_time", False)
+    if get_eva_time:
+        for i in range(args["temporal_length"]-100, args["temporal_length"]):
+            if torch.max(output[0, i, :]) < 1:
+                output_empty = i
+                break
+        for i in range(args["temporal_length"]-100, args["temporal_length"]):
+            if torch.max(target[0, i, :]) < 1:
+                target_empty = i
+                break
+
+        print("output empty at ", output_empty*args["deltaT"])
+        print("target empty at ", target_empty*args["deltaT"])
 
     if args.get("plot", False):
         show_cell = args.get("show_cell", None)
