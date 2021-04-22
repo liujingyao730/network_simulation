@@ -95,7 +95,7 @@ class dcn(nn.Module):
         out_h = torch.einsum("cc,bci->bci", laplace, input_data)
         out_h = torch.einsum("bci,io->bco", out_h, self.out_weight)
         
-        in_h = torch.einsum("cc,bci->bci", laplace, input_data)
+        in_h = torch.einsum("cc,bci->bci", laplace.transpose(0, 1), input_data)
         in_h = torch.einsum("bci,io->bco", in_h, self.in_weight)
         
         output = in_h + out_h
