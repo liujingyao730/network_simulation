@@ -31,9 +31,9 @@ class single_attention(nn.Module):
             self.forward_gnn = gcn(self.hidden_size, self.hidden_size)
             self.backward_gnn = gcn(self.hidden_size, self.hidden_size)
         elif self.gnn_type == "gat":
-            self.init_graph = gat(self.input_size, self.hidden_size)
-            self.forward_gnn = gat(self.hidden_size, self.hidden_size)
-            self.backward_gnn = gat(self.hidden_size, self.hidden_size)
+            
+            raise NotImplementedError
+
         elif self.gnn_type == "dcn":
             self.init_graph = dcn(self.input_size, self.hidden_size)
             self.forward_gnn = dcn(self.hidden_size, self.hidden_size)
@@ -168,9 +168,7 @@ class single_attention_non_gate(nn.Module):
             self.forward_gnn = gcn(self.hidden_size, self.hidden_size)
             self.backward_gnn = gcn(self.hidden_size, self.hidden_size)
         elif self.gnn_type == "gat":
-            self.init_graph = gat(self.input_size, self.hidden_size)
-            self.forward_gnn = gat(self.hidden_size, self.hidden_size)
-            self.backward_gnn = gat(self.hidden_size, self.hidden_size)
+            raise NotImplementedError
         elif self.gnn_type == "dcn":
             self.init_graph = dcn(self.input_size, self.hidden_size)
             self.forward_gnn = dcn(self.hidden_size, self.hidden_size)
@@ -318,7 +316,7 @@ class baseline(nn.Module):
 
         self.input_cells = input_cells
     
-    def infer(self, input_data, adj_list, mod="infer"):
+    def infer(self, input_data, adj_list, index_list, weight_list, mod="infer"):
 
         assert mod == "train" or mod == "infer"
         assert self.input_cells is not None
@@ -335,7 +333,10 @@ class baseline(nn.Module):
         laplace_list_forward = adj_to_laplace(adj_list)
         laplace_list_backward = adj_to_laplace(torch.transpose(adj_list, 1, 2))
 
-        hidden = self.init_graph(input_data[:, 0, :, :], laplace_list_forward[0, :, :])
+        if self.gnn_type == "gat":
+            hidden = self.init_graph(input_data[:, 0, :, :], index_list[0, :, :], weight_list[0, :, :])
+        else:
+            hidden = self.init_graph(input_data[:, 0, :, :], laplace_list_forward[0, :, :])
         if self.rnn_type == "lstm":
             c = Variable(input_data.data.new(batch * cell, self.hidden_size).fill_(0).float())
 
@@ -343,8 +344,12 @@ class baseline(nn.Module):
 
         for i in range(temporal-1):
 
-            forward_h = self.forward_gnn(hidden, laplace_list_forward[i, :, :])
-            backward_h = self.backward_gnn(hidden, laplace_list_backward[i, :, :])
+            if self.gnn_type == "gat":
+                forward_h = self.forward_gnn(hidden, index_list[i, :, :], weight_list[i, :, :])
+                backward_h = self.backward_gnn(hidden, index_list[i, :, :], weight_list[i, :, :])
+            else:
+                forward_h = self.forward_gnn(hidden, laplace_list_forward[i, :, :])
+                backward_h = self.backward_gnn(hidden, laplace_list_backward[i, :, :])
 
             h_space = self.sptial_merge(torch.cat((forward_h, backward_h), dim=2))
 
@@ -382,9 +387,9 @@ class baseline(nn.Module):
 
         return output
     
-    def forward(self, input_data, adj_list):
+    def forward(self, input_data, adj_list, index_list, weight_list):
 
-        return self.infer(input_data, adj_list, mod="train")
+        return self.infer(input_data, adj_list, index_list, weight_list, mod="train")
 
 
 if __name__ == "__main__":
@@ -393,7 +398,7 @@ if __name__ == "__main__":
     args["input_size"] = 46
     args["output_size"] = 8
     args["hidden_size"] = 64
-    args["gnn"] = "gcn"
+    args["gnn"] = "gat"
     args["rnn"] = "gru"
 
     input_data = Variable(torch.rand(17, 8, 40, 46))

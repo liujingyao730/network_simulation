@@ -17,7 +17,7 @@ from struct_ablation import single_attention, single_attention_non_gate, baselin
 from feature_ablation import non_dir_model
 from network import data_on_network
 import dir_manage as d
-from utils import sparselist_to_tensor
+from utils import sparselist_to_tensor, from_sparse_get_index
 from loss_function import non_negative_loss, narrow_output_loss
 
 def train_epoch(args, model, loss_function, optimizer, meter, sample_rate):
@@ -53,6 +53,12 @@ def train_epoch(args, model, loss_function, optimizer, meter, sample_rate):
 
             data, adj_list = data_set.get_batch()
 
+            if args["gnn"] == "gat":
+                index_list, weight_list = from_sparse_get_index(adj_list)
+                weight_list = torch.Tensor(weight_list)
+                if use_cuda:
+                    weight_list = weight_list.cuda()
+
             adj_list = Variable(torch.Tensor(sparselist_to_tensor(adj_list)))
             inputs = Variable(torch.Tensor(data))
             targets = inputs[:, args["init_length"]+1:, :, :]
@@ -63,9 +69,15 @@ def train_epoch(args, model, loss_function, optimizer, meter, sample_rate):
                 inputs = inputs.cuda()
 
             if random.random() > sample_rate:
-                outputs = model.infer(inputs, adj_list)
+                if args["gnn"] == "gat":
+                    outputs = model.infer(inputs, adj_list, index_list, weight_list)
+                else:
+                    outputs = model.infer(inputs, adj_list)
             else:
-                outputs = model(inputs, adj_list)
+                if args["gnn"] == "gat":
+                    outputs = model(inputs, adj_list, index_list, weight_list)
+                else:
+                    outputs = model(inputs, adj_list)
 
             dest_loss = loss_function(targets[:, :, :, :args["output_size"]], outputs)
 
@@ -122,6 +134,12 @@ def test_epoch(args, model, loss_function, meter):
  
             inputs, adj_list = data_set.get_batch()
 
+            if args["gnn"] == "gat":
+                index_list, weight_list = from_sparse_get_index(adj_list)
+                weight_list = torch.Tensor(weight_list)
+                if use_cuda:
+                    weight_list = weight_list.cuda()
+
             adj_list = torch.Tensor(sparselist_to_tensor(adj_list))
             inputs = torch.Tensor(inputs)
             targets = inputs[:, args["init_length"]+1:, :, :]
@@ -131,7 +149,10 @@ def test_epoch(args, model, loss_function, meter):
                 targets = targets.cuda()
                 inputs = inputs.cuda()
 
-            outputs = model.infer(inputs, adj_list)
+            if args["gnn"] == "gat":
+                outputs = model.infer(inputs, adj_list, index_list, weight_list)
+            else:
+                outputs = model.infer(inputs, adj_list)
             
             # targets = data_set.recovery_data(targets)
             # outputs = data_set.recovery_data(outputs)
@@ -167,12 +188,12 @@ def train(args):
         print(key, " ", args[key])
         log_file.write(key+"  "+str(args[key])+'\n')
 
-    model = replaceable_model(args)
+    # model = replaceable_model(args)
     # model = non_dir_model(args)
     # model = dyn_embedding(args)
     # model = single_attention(args)
     # model = single_attention_non_gate(args)
-    # model = baseline(args)
+    model = baseline(args)
 
     length = args["temporal_length"]
 

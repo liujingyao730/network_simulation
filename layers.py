@@ -48,21 +48,23 @@ class gat(nn.Module):
 
         self.relu = nn.ReLU()
     
-    def forward(self, inputs, adj):
+    def forward(self, inputs, index, weight=None):
 
         h = torch.einsum("bni,io->bno", inputs, self.W)
         batch_size = h.size()[0]
         N = h.size()[1]
 
-        a_input = torch.cat([h.repeat(1, 1, N).view(batch_size, N*N, -1), h.repeat(1, N, 1)], dim=2).view(batch_size, N, -1, 2*self.output_size)
+        a_input = torch.cat([h.repeat(1, 1, 2).view(batch_size, N, 2, -1), h[:, index, :]], dim=2).view(batch_size, N, -1, 2*self.output_size)
         e = self.relu(torch.einsum("bmnc,cd->bmnd", a_input, self.a).squeeze(3))
         
-        adj = adj.repeat(batch_size, 1, 1)
-        zero_vector = torch.zeros_like(adj)
+        weight = weight.unsqueeze(0).repeat(batch_size, 1, 1)
+        zero_vector = torch.zeros_like(weight)
 
-        attention = torch.where(adj > 0, e, zero_vector)
+        attention = torch.where(weight > 0, e, zero_vector)
         attention = torch.nn.functional.softmax(attention, dim=2)
-        h_prime = torch.einsum("bmn,bno->bmo", attention, h)
+        attention = attention.unsqueeze(2)
+        h_prime = torch.einsum("bcmn,bcno->bcmo", attention, h[:, index, :])
+        h_prime = h_prime.squeeze(2)
 
         return h_prime
     
