@@ -316,7 +316,7 @@ class baseline(nn.Module):
 
         self.input_cells = input_cells
     
-    def infer(self, input_data, adj_list, index_list, weight_list, mod="infer"):
+    def infer(self, input_data, adj_list, index=None, weight=None, mod="infer"):
 
         assert mod == "train" or mod == "infer"
         assert self.input_cells is not None
@@ -325,6 +325,10 @@ class baseline(nn.Module):
 
         assert feature == self.input_size
         assert temporal - 1 > self.init_length
+        
+        if index is not None:
+            index_list, reverse_index_list = index
+            weight_list, reverse_weight_list = weight
 
         predict_cells = [i for i in range(cell) if i not in self.input_cells]
 
@@ -346,7 +350,7 @@ class baseline(nn.Module):
 
             if self.gnn_type == "gat":
                 forward_h = self.forward_gnn(hidden, index_list[i, :, :], weight_list[i, :, :])
-                backward_h = self.backward_gnn(hidden, index_list[i, :, :], weight_list[i, :, :])
+                backward_h = self.backward_gnn(hidden, reverse_index_list[i, :, :], reverse_weight_list[i, :, :])
             else:
                 forward_h = self.forward_gnn(hidden, laplace_list_forward[i, :, :])
                 backward_h = self.backward_gnn(hidden, laplace_list_backward[i, :, :])
@@ -387,9 +391,9 @@ class baseline(nn.Module):
 
         return output
     
-    def forward(self, input_data, adj_list, index_list, weight_list):
+    def forward(self, input_data, adj_list, index=None, weight=None):
 
-        return self.infer(input_data, adj_list, index_list, weight_list, mod="train")
+        return self.infer(input_data, adj_list, index, weight, mod="train")
 
 
 if __name__ == "__main__":

@@ -1,6 +1,7 @@
 import numpy as np
 import pickle
 import os
+from sklearn.metrics import mean_squared_error, mean_absolute_error
 
 import dir_manage
 
@@ -178,7 +179,18 @@ class network(object):
         for link in range(self.link_number):
             self.update_vehicle_number(link)
             self.update_queue_length(link)
+    
+    def calculate_loss(self, inputs, targets):
 
+        output = np.zeros(targets.shape)
+
+        temporal, link = targets.shape
+
+        for time in range(temporal):
+            self.step(inputs[time, :])
+            output[time, :] += self.vehicle_number
+        
+        return mean_squared_error(targets, output)
 
 if __name__ == "__main__":
 

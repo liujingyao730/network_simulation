@@ -78,3 +78,25 @@ def from_sparse_get_index(adj_list):
                 weight[t, r, 0] = 1
     
     return index, weight
+
+def from_sparse_get_reverse_index(adj_list):
+
+    time = len(adj_list)
+    N = adj_list[0].shape[0]
+    index = np.zeros((time, N, 2)).astype('int') - 1
+    weight = np.zeros((time, N, 2))
+    
+    for t in range(time):
+        adj_t = adj_list[t]
+        adj = sp.coo_matrix(adj_t)
+        for i in range(len(adj.row)):
+            r = adj.col[i]
+            c = adj.row[i]
+            if index[t, r, 0] > -1:
+                index[t, r, 1] = c
+                weight[t, r, 1] = 1
+            else:
+                index[t, r, 0] = c
+                weight[t, r, 0] = 1
+    
+    return index, weight
