@@ -37,7 +37,6 @@ class network(object):
         self.green_time = np.zeros((self.link_number, 3))
         self.cycle_time = np.zeros(self.link_number)
 
-        self.split_rate = np.zeros((self.link_number, 3))
         self.arrive_flow = np.zeros((self.link_number, 3))
         self.leave_flow = np.zeros((self.link_number, 3))
         self.staturated_flow = np.zeros((self.link_number, 3))
