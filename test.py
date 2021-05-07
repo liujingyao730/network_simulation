@@ -15,14 +15,14 @@ import dir_manage as d
 from utils import sparselist_to_tensor
 import pre_process as pp
 
-def test_model(args):
+def test_model(args, data_set):
 
-    with open(os.path.join(d.cell_data_path, args["net_file"]), 'rb') as f:
-        net_information = pickle.load(f)
+    # with open(os.path.join(d.cell_data_path, args["net_file"]), 'rb') as f:
+    #     net_information = pickle.load(f)
     
     show_detail = args.get("show_detail", False)
 
-    data_set = data_on_network(net_information, args["destination"][0], args["prefix"], args)
+    # data_set = data_on_network(net_information, args["destination"][0], args["prefix"], args)
     # data_set.normalize_data()
 
     inputs, adj_list = data_set.get_batch()
@@ -51,6 +51,7 @@ def test_model(args):
     model_file = os.path.join(d.log_path, args["model_prefix"], str(args["model"])+'.tar')
     checkpoint = torch.load(model_file)
     model.load_state_dict(checkpoint["state_dict"])
+    model.eval()
 
     inputs = torch.Tensor(inputs)
     target = torch.Tensor(target)
@@ -112,11 +113,11 @@ def test_model(args):
 
     get_eva_time = args.get("get_eva_time", False)
     if get_eva_time:
-        for i in range(args["temporal_length"]-100, args["temporal_length"]):
+        for i in range(args["temporal_length"]-300, args["temporal_length"]):
             if torch.max(output[0, i, :]) < 1:
                 output_empty = i
                 break
-        for i in range(args["temporal_length"]-100, args["temporal_length"]):
+        for i in range(args["temporal_length"]-300, args["temporal_length"]):
             if torch.max(target[0, i, :]) < 1:
                 target_empty = i
                 break
@@ -152,4 +153,7 @@ if __name__ == "__main__":
     with open(basic_conf, 'rb') as f:
         args = yaml.load(f, Loader=yaml.FullLoader)
 
-    test_model(args)
+    with open(os.path.join(d.cell_data_path, args["net_file"]), 'rb') as f:
+        net_information = pickle.load(f)
+    data_set = data_on_network(net_information, args["destination"][0], args["prefix"], args)
+    test_model(args, data_set)

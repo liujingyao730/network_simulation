@@ -194,12 +194,12 @@ def train(args):
         print(key, " ", args[key])
         log_file.write(key+"  "+str(args[key])+'\n')
 
-    # model = replaceable_model(args)
+    model = replaceable_model(args)
     # model = non_dir_model(args)
     # model = dyn_embedding(args)
     # model = single_attention(args)
     # model = single_attention_non_gate(args)
-    model = baseline(args)
+    # model = baseline(args)
 
     length = args["temporal_length"]
 
@@ -260,7 +260,7 @@ def train(args):
             "optimizer_state_dict": optimizer.state_dict()
         }, os.path.join(record_fold, str(epoch)+'.tar'))
 
-        args["dest_weight"] = min(args["dest_increase"]+args["dest_weight"], 4)
+        args["dest_weight"] = min(args["dest_increase"]+args["dest_weight"], 8)
         args["total_weight"] = max(args["total_weight"]-args["total_decay"], 0)
 
         # args["temporal_length"] = int(int(epoch / 10) * 0.5 * length + length)
