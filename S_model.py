@@ -19,13 +19,14 @@ class network(object):
         self.id2index["end_link"] = self.link_number
 
         self.vehicle_number = np.zeros(self.link_number)
-        self.queue_length = np.zeros(self.link_number, 3)
+        self.queue_length = np.zeros((self.link_number, 3))
         self.capacity = np.zeros(self.link_number)
         self.lane_number = np.zeros(self.link_number)
         self.free_speed = np.ones(self.link_number) * 16.67
         self.vehicle_length = 4.5
+        self.temporal = 40
 
-        time_storage = 3
+        time_storage = 10
 
         self.split_rate = np.zeros((self.link_number, 3))
         self.leave_flow = np.zeros((self.link_number, 3))
@@ -79,6 +80,8 @@ class network(object):
 
                 i += 1
         
+        self.cycle_time[:] = 90
+
     def update_sigma_gamma(self, link):
 
         self.sigma[link, 0] = self.sigma[link, 1]
@@ -91,8 +94,8 @@ class network(object):
 
         enter_flow = 0
         for i in range(3):
-            f_link = self.link_from[link, i, 0]
-            index = self.link_from[link, i, 1]
+            f_link = int(self.link_from[link, i, 0])
+            index = int(self.link_from[link, i, 1])
             if index == -1:
                 break
             enter_flow += self.leave_flow[f_link, index]
@@ -109,8 +112,8 @@ class network(object):
         gamma_k_1 = self.gamma[link, 0]
         enter_1 = self.enter_flow[link, sigma_k]
         enter_2 = self.enter_flow[link, sigma_k_1+1]
-        arrive_flow_total = (self.cycle_time[link] - gamma_k) / self.cycle_time * enter_1
-        arrive_flow_total += gamma_k_1 / self.cycle_time * enter_2
+        arrive_flow_total = (self.cycle_time[link] - gamma_k) / self.cycle_time[link] * enter_1
+        arrive_flow_total += gamma_k_1 / self.cycle_time[link] * enter_2
 
         for i in range(3):
             if self.link_from[link, i, 0] == -1:
@@ -122,9 +125,9 @@ class network(object):
         for i in range(3):
             if self.link_to[link1, i, 0] == link2:
                 break
-        factor_1 = self.staturated_flow(link1) * self.green_time[link1, i] / self.cycle_time[link1]
-        factor_2 = self.queue_length[link1, i] / self.cycle_time + np.sum(self.arrive_flow[link1, :])
-        factor_3 = self.split_rate[link1, i](self.capacity[link1] - self.vehicle_number[link1])
+        factor_1 = self.staturated_flow[link1, i] * self.green_time[link1, i] / self.cycle_time[link1]
+        factor_2 = self.queue_length[link1, i] / self.cycle_time[link1] + np.sum(self.arrive_flow[link1, :])
+        factor_3 = self.split_rate[link1, i]*(self.capacity[link1] - self.vehicle_number[link1])
         factor_3 = factor_3 / np.sum(self.split_rate[link1, :] * self.cycle_time[link1])
 
         self.arrive_flow[link1, i] = min(factor_1, factor_2, factor_3)
@@ -135,9 +138,9 @@ class network(object):
     
     def update_queue_length(self, link):
 
-        self.queue_length[link, 0] = self.queue_length[link, 0] + (self.arrive_flow[link, 0] - self.leave_flow[link, 0]) * self.cycle_time[link]
-        self.queue_length[link, 1] = self.queue_length[link, 1] + (self.arrive_flow[link, 1] - self.leave_flow[link, 1]) * self.cycle_time[link]
-        self.queue_length[link, 2] = self.queue_length[link, 2] + (self.arrive_flow[link, 2] - self.leave_flow[link, 2]) * self.cycle_time[link]
+        self.queue_length[link, 0] = max(self.queue_length[link, 0] + (self.arrive_flow[link, 0] - self.leave_flow[link, 0]) * self.cycle_time[link], 0)
+        self.queue_length[link, 1] = max(self.queue_length[link, 1] + (self.arrive_flow[link, 1] - self.leave_flow[link, 1]) * self.cycle_time[link], 0)
+        self.queue_length[link, 2] = max(self.queue_length[link, 2] + (self.arrive_flow[link, 2] - self.leave_flow[link, 2]) * self.cycle_time[link], 0)
 
     def set_input_output(self, input_links, output_links):
 
@@ -179,17 +182,20 @@ class network(object):
             self.update_vehicle_number(link)
             self.update_queue_length(link)
     
-    def calculate_loss(self, inputs, targets):
+    def calculate_loss(self, inputs, targets, input_links, output_links):
 
         output = np.zeros(targets.shape)
 
-        temporal, link = targets.shape
+        input_link_id = [self.id2index[link] for link in input_links]
+        output_link_id = [self.id2index[link] for link in output_links]
+        self.set_input_output(input_link_id, output_link_id)
+        self.split_rate = self.split_rate / np.sum(self.split_rate, axis=1)[:, None]
 
-        for time in range(temporal):
-            self.step(inputs[time, :])
+        for time in range(self.temporal):
+            self.step(inputs.loc[time*90])
             output[time, :] += self.vehicle_number
         
-        return mean_squared_error(targets, output)
+        return float(mean_squared_error(targets, output))
 
 if __name__ == "__main__":
 
