@@ -12,7 +12,7 @@ from struct_ablation import single_attention, single_attention_non_gate, baselin
 from feature_ablation import non_dir_model
 from network import network_data, data_on_network
 import dir_manage as d
-from utils import sparselist_to_tensor
+from utils import sparselist_to_tensor, from_sparse_get_index, from_sparse_get_reverse_index
 import pre_process as pp
 
 def test_model(args, data_set):
@@ -57,6 +57,14 @@ def test_model(args, data_set):
     target = torch.Tensor(target)
     adj_list = torch.Tensor(sparselist_to_tensor(adj_list))
 
+    if args["gnn"] == "gat":
+        index_list, weight_list = from_sparse_get_index(adj_list)
+        reverse_index_list, reverse_weight_list = from_sparse_get_reverse_index(adj_list)
+        weight_list = torch.Tensor(weight_list)
+        reverse_weight_list = torch.Tensor(reverse_weight_list)
+        weight_list = weight_list.cuda()
+        reverse_weight_list = reverse_weight_list.cuda()
+
     inputs = inputs.cuda()
     target = target.cuda()
     adj_list = adj_list.cuda()
@@ -64,7 +72,10 @@ def test_model(args, data_set):
     cell_index = data_set.name_to_id(args["input_cells_name"])
     model.set_input_cells(cell_index)
 
-    output = model.infer(inputs, adj_list)
+    if args["gnn"] == "gat":
+        output = model.infer(inputs, adj_list, [index_list, reverse_index_list], [weight_list, reverse_weight_list])
+    else:
+        output = model.infer(inputs, adj_list)
 
     # target = data_set.recovery_data(target)
     # output = data_set.recovery_data(output)
