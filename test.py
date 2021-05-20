@@ -9,6 +9,7 @@ from model import GCN_GRU, node_encode_attention
 from coder_model import st_node_encoder, coder_on_dir
 from com_model import replaceable_model,dyn_embedding
 from struct_ablation import single_attention, single_attention_non_gate, baseline
+from gnn_conv import gnn_conv
 from feature_ablation import non_dir_model
 from network import network_data, data_on_network
 import dir_manage as d
@@ -46,6 +47,8 @@ def test_model(args, data_set):
         model = single_attention_non_gate(args)
     elif model_type == "baseline":
         model = baseline(args)
+    elif model_type == "gnn_conv":
+        model = gnn_conv(args)
     else:
         raise NotImplementedError
     model_file = os.path.join(d.log_path, args["model_prefix"], str(args["model"])+'.tar')
