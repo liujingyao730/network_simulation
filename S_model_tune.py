@@ -18,9 +18,13 @@ target = pd.read_csv(target_file, index_col=0)
 with open(os.path.join(dir_manage.cell_data_path, net_pickle), "rb") as f:
     net_information = pickle.load(f)
 link_number = len(net_information["ordinary_cell"].keys())
+inputs_time_list = [i*90 for i in range(40)]
+outputs_time_list = [(i+1)*90 for i in range(40)]
 net = network(net_pickle)
 input_links = list(inputs.columns)
-output_links = ["-gneE0", "-gneE1", "-gneE2", "-gneE4", "-gneE5", "-gneE6", "-gneE12", "-gneE13"]
+output_links = ["-gneE0", "-gneE1", "-gneE2", "-gneE4", "-gneE5", "-gneE6", "-gneE12", "-gneE13", "-gneE15", "-gneE14", "-gneE8", "-gneE10"]
+inputs = inputs.loc[inputs_time_list]
+target = target.loc[outputs_time_list]
 
 def loss_func(Phen):
 
@@ -29,22 +33,33 @@ def loss_func(Phen):
     popluation_size, length = Phen.shape
     result = np.zeros((popluation_size, 1))
 
-    assert length == 6 * link_number
+    assert length == 7 * link_number
 
     for i in range(popluation_size):
 
         x = Phen[i, :]
-        net.split_rate = x[:3*link_number].reshape((link_number, 3))
-        net.staturated_flow = x[3*link_number:].reshape((link_number, 3))
+        net.split_rate = (1 / 3) * np.ones((link_number, 3))
+        net.staturated_flow = x[:3*link_number].reshape((link_number, 3))
+        net.split_rate = x[3*link_number:6*link_number].reshape((link_number, 3))
+        net.capacity[:-1] = x[6*link_number:]
 
         result[i, 0] += net.calculate_loss(inputs, target, input_links, output_links)
     
     return result
+'''
+def loss_func(Phen):
 
-var_number = 6 * link_number
+    population, length = Phen.shape
 
-upper = np.ones(var_number) * 5
+    Phen = Phen * Phen
+    return np.sum(Phen, axis=1).reshape(population, 1)
+'''
+var_number = 7 * link_number
+
+upper = np.ones(var_number) * 2
 lower = np.zeros(var_number)
+lower[6*link_number:] = 100
+upper[6*link_number:] = 2500
 ranges = np.vstack([lower, upper])
 
 is_border = np.ones((2, var_number))
@@ -53,13 +68,13 @@ varTypes = np.zeros(var_number)
 
 Encoding = "BG"
 coders = [1 for i in range(var_number)]
-precisions = [6 for i in range(var_number)]
+precisions = [4 for i in range(var_number)]
 scales = [0 for i in range(var_number)]
 
 FieldD = ea.crtfld(Encoding, varTypes, ranges, is_border, precisions, coders, scales)
 
-NIND = 40
-MAXGEN = 500
+NIND = 500
+MAXGEN = 1000
 maxormins = np.array([1])
 
 selectStyle = "sus"
@@ -68,7 +83,7 @@ mutStyle = "mutbin"
 Lind = int(np.sum(FieldD[0, :]))
 
 pc = 0.9
-pm = 1 / Lind
+pm = 10 / Lind
 obj_trace = np.zeros((MAXGEN, 2))
 var_trace = np.zeros((MAXGEN, Lind))
 
@@ -80,7 +95,7 @@ best_ind = np.argmin(ObjV)
 
 for gen in range(MAXGEN):
     
-    FitnV = ea.ranking(maxormins*ObjV)
+    FitnV = ea.ranking(ObjV, maxormins=maxormins)
     SelCh = Chorm[ea.selecting(selectStyle, FitnV, NIND-1), :]
     SelCh = ea.recombin(recStyle, SelCh, pc)
     SelCh = ea.mutate(mutStyle, Encoding, SelCh, pm)
