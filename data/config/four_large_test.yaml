@@ -13,24 +13,32 @@ sample_rate: 1
 sample_decay: 0.03
 
 init_length: 4
-temporal_length: 900
+temporal_length: 1000
 temporal_extend: 300
 sim_step: 0.1
 deltaT: 5
 batch_size: 1
 
 model_type: replaceable_model
-model_prefix: change_weight_3
+model_prefix: change_weight_4
 model: 47
 
 prefix: 
-  - four_6
+  - four_4
 
-show_cell: 
+show_cell: 33
 show_start: 0
-show_end: 896
+show_end: 1000
 plot: True
 show_detail: False
+get_eva_time: False
+3D_show: False
+3D_cell:
+  - 0
+  - 1
+  - 2
+3D_start: 410
+3D_end: 428
 
 destination:
   -

@@ -104,6 +104,27 @@ def test_model(args, data_set):
             plt.legend()
             plt.savefig("dest" + str(i) + ".png")
 
+    if args["3D_show"]:
+
+        fig = plt.figure()
+        ax = fig.gca(projection='3d')
+        start_time = args["3D_start"]
+        end_time = args["3D_end"]
+        
+        output_x = output[0, start_time:end_time, 33, args['3D_cell'][0]].detach().cpu().numpy()
+        output_y = output[0, start_time:end_time, 33, args['3D_cell'][1]].detach().cpu().numpy()
+        output_z = output[0, start_time:end_time, 33, args['3D_cell'][2]].detach().cpu().numpy()
+
+        target_x = target[0, start_time:end_time, 33, args['3D_cell'][0]].detach().cpu().numpy()
+        target_y = target[0, start_time:end_time, 33, args['3D_cell'][1]].detach().cpu().numpy()
+        target_z = target[0, start_time:end_time, 33, args['3D_cell'][2]].detach().cpu().numpy()
+
+        ax.plot(output_x, output_y, output_z, label="output")
+        ax.plot(target_x, target_y, target_z, label="target")
+
+        ax.legend()
+        plt.savefig("3d_result.png")
+
     f = torch.nn.MSELoss()
     output = torch.sum(output, dim=3)
     target = torch.sum(target[:, :, :, :args["output_size"]], dim=3)
