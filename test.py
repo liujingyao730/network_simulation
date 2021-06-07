@@ -1,9 +1,11 @@
+from numpy.core.records import array
 import torch
 import pickle
 import numpy as np
 import os
 import yaml
 import matplotlib.pyplot as plt
+from sklearn.metrics import mean_squared_error
 
 from model import GCN_GRU, node_encode_attention
 from coder_model import st_node_encoder, coder_on_dir
@@ -11,10 +13,10 @@ from com_model import replaceable_model,dyn_embedding
 from struct_ablation import single_attention, single_attention_non_gate, baseline
 from gnn_conv import gnn_conv
 from feature_ablation import non_dir_model
-from network import network_data, data_on_network
+from network import data_on_network
 import dir_manage as d
 from utils import sparselist_to_tensor, from_sparse_get_index, from_sparse_get_reverse_index
-import pre_process as pp
+from rgb_heatmap import rgb_map
 
 def test_model(args, data_set):
 
@@ -83,10 +85,14 @@ def test_model(args, data_set):
     # target = data_set.recovery_data(target)
     # output = data_set.recovery_data(output)
 
+    target = target.detach().cpu().numpy()
+    output = output.detach().cpu().numpy()
+    torch.cuda.empty_cache()
+
     if show_detail:
         
-        real_data = target[0, :, :, :].detach().cpu().numpy()
-        predict_data = output[0, :, :, :].detach().cpu().numpy()
+        real_data = target[0, :, :, :]
+        predict_data = output[0, :, :, :]
         start = args.get("show_start", 0)
         end = args.get("show_end", 400)
         show_cell = args.get("show_cell", None)
@@ -111,29 +117,45 @@ def test_model(args, data_set):
         start_time = args["3D_start"]
         end_time = args["3D_end"]
         
-        output_x = output[0, start_time:end_time, 33, args['3D_cell'][0]].detach().cpu().numpy()
-        output_y = output[0, start_time:end_time, 33, args['3D_cell'][1]].detach().cpu().numpy()
-        output_z = output[0, start_time:end_time, 33, args['3D_cell'][2]].detach().cpu().numpy()
+        output_x = output[0, start_time:end_time, 33, args['3D_cell'][0]]
+        output_y = output[0, start_time:end_time, 33, args['3D_cell'][1]]
+        output_z = output[0, start_time:end_time, 33, args['3D_cell'][2]]
 
-        target_x = target[0, start_time:end_time, 33, args['3D_cell'][0]].detach().cpu().numpy()
-        target_y = target[0, start_time:end_time, 33, args['3D_cell'][1]].detach().cpu().numpy()
-        target_z = target[0, start_time:end_time, 33, args['3D_cell'][2]].detach().cpu().numpy()
+        target_x = target[0, start_time:end_time, 33, args['3D_cell'][0]]
+        target_y = target[0, start_time:end_time, 33, args['3D_cell'][1]]
+        target_z = target[0, start_time:end_time, 33, args['3D_cell'][2]]
 
         ax.plot(output_x, output_y, output_z, label="output")
         ax.plot(target_x, target_y, target_z, label="target")
 
         ax.legend()
         plt.savefig("3d_result.png")
+    
+    if args["heatmap"]:
 
-    f = torch.nn.MSELoss()
-    output = torch.sum(output, dim=3)
-    target = torch.sum(target[:, :, :, :args["output_size"]], dim=3)
+        cells = args["cells"]
+        start_t = args["heatmap_start"]
+        end_t = args["heatmap_end"]
+        dests = args["dest"]
+
+        if len(dests) > 3:
+            raise Exception('最多只能显示3个终点分量')
+
+        inputs = output[0, start_t:end_t, cells, :]
+        inputs = inputs[:, :, dests]
+        rgb_map(inputs, output_file='output.png')
+        inputs = target[0, start_t:end_t, cells, :]
+        inputs = inputs[:, :, dests]
+        rgb_map(inputs, output_file="target.png")
+
+    output = np.sum(output, axis=3)
+    target = np.sum(target[:, :, :, :args["output_size"]], axis=3)
 
     max_error = 0
     max_error_cell = -1
 
     for i in range(output.shape[2]):
-        error = f(output[0, :, i], target[0, :, i])
+        error = mean_squared_error(output[0, :, i], target[0, :, i])
         if error > 25:
             print(i, error)
         if error > max_error:
@@ -141,19 +163,19 @@ def test_model(args, data_set):
             max_error_cell = i
 
     print("max error ", max_error, " in cell ", max_error_cell)
-    ave_error = f(output, target)
-    last_error = f(output[:, -1, :], target[:, -1, :])
+    ave_error = mean_squared_error(output[0, :, :], target[0, :, :])
+    last_error = mean_squared_error(output[0, -1, :], target[0, -1, :])
     print(ave_error)
     print(last_error)
 
     get_eva_time = args.get("get_eva_time", False)
     if get_eva_time:
         for i in range(args["temporal_length"]-300, args["temporal_length"]):
-            if torch.max(output[0, i, :]) < 1:
+            if np.max(output[0, i, :]) < 1:
                 output_empty = i
                 break
         for i in range(args["temporal_length"]-300, args["temporal_length"]):
-            if torch.max(target[0, i, :]) < 1:
+            if np.max(target[0, i, :]) < 1:
                 target_empty = i
                 break
 
@@ -165,11 +187,11 @@ def test_model(args, data_set):
         start = args.get("show_start", 0)
         end = args.get("show_end", 400)
         if show_cell is None:
-            real_cell = target[0, start:end, :].detach().cpu().numpy().sum(1)
-            predict_cell = output[0, start:end, :].detach().cpu().numpy().sum(1)
+            real_cell = target[0, start:end, :].sum(1)
+            predict_cell = output[0, start:end, :].sum(1)
         else:
-            real_cell = target[0, :, show_cell].detach().cpu().numpy()[start:end]
-            predict_cell = output[0, :, show_cell].detach().cpu().numpy()[start:end]
+            real_cell = target[0, start:end, show_cell]
+            predict_cell = output[0, start:end, show_cell]
         x = np.array(range(real_cell.shape[0]))
 
         plt.figure(figsize=(10,4))
