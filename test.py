@@ -1,10 +1,14 @@
+from numpy.core.defchararray import index
 from numpy.core.records import array
+from numpy.lib.shape_base import column_stack
+import pandas as pd
 import torch
 import pickle
 import numpy as np
 import os
 import yaml
 import matplotlib.pyplot as plt
+import seaborn as sns
 from sklearn.metrics import mean_squared_error
 
 from model import GCN_GRU, node_encode_attention
@@ -110,7 +114,8 @@ def test_model(args, data_set):
             plt.legend()
             plt.savefig("dest" + str(i) + ".png")
 
-    if args["3D_show"]:
+    show_3d = args.get("3D_show", False)
+    if show_3d:
 
         fig = plt.figure()
         ax = fig.gca(projection='3d')
@@ -131,22 +136,49 @@ def test_model(args, data_set):
         ax.legend()
         plt.savefig("3d_result.png")
     
-    if args["heatmap"]:
+    rgb_heatmap = args.get("rgb_heatmap", False)
+    if rgb_heatmap:
 
         cells = args["cells"]
-        start_t = args["heatmap_start"]
-        end_t = args["heatmap_end"]
-        dests = args["dest"]
+        start_t = args["rgb_start"]
+        end_t = args["rgb_end"]
+        dests = args["dests"]
 
         if len(dests) > 3:
             raise Exception('最多只能显示3个终点分量')
 
         inputs = output[0, start_t:end_t, cells, :]
         inputs = inputs[:, :, dests]
-        rgb_map(inputs, output_file='output.png')
-        inputs = target[0, start_t:end_t, cells, :]
+        rgb_map(inputs, output_file='output_rgb_heat.png')
+        inputs = target[0, start_t:end_t, cells, :args["output_size"]]
         inputs = inputs[:, :, dests]
-        rgb_map(inputs, output_file="target.png")
+        rgb_map(inputs, output_file="target_rgb_heat.png")
+    
+    heatmap = args.get("heat_map", False)
+    if heatmap:
+
+        cells = args["cells"][::-1]
+        start = args["heatmap_start"]
+        end = args["heatmap_end"]
+
+        output_heat = np.sum(output[0, start:end, cells, :], axis=2)
+        target_heat = np.sum(target[0, start:end, cells, :args["output_size"]], axis=2)
+        col = range(start, end)
+        output_heat = pd.DataFrame(output_heat, index=cells, columns=col)
+        target_heat = pd.DataFrame(target_heat, index=cells, columns=col)
+
+        fig, ax = plt.subplots(figsize=(14, 4))
+        sns.heatmap(output_heat, cmap='YlGnBu', linewidths=.5, ax=ax, xticklabels=10, vmax=70)
+        plt.xlabel("time step")
+        plt.ylabel("cell label")
+        plt.savefig("output_heat.png")
+        plt.cla()
+        fig, ax = plt.subplots(figsize=(14, 4))
+        sns.heatmap(target_heat, cmap='YlGnBu', linewidths=.5, ax=ax, xticklabels=10, vmax=70)
+        plt.xlabel("time step")
+        plt.ylabel("cell label")
+        plt.savefig("target_heat.png")
+        plt.cla()
 
     output = np.sum(output, axis=3)
     target = np.sum(target[:, :, :, :args["output_size"]], axis=3)

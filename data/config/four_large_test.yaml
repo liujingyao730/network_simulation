@@ -19,8 +19,8 @@ sim_step: 0.1
 deltaT: 5
 batch_size: 1
 
-model_type: replaceable_model
-model_prefix: change_weight_4
+model_type: baseline
+model_prefix: baseline1
 model: 47
 
 prefix: 
@@ -34,11 +34,29 @@ show_detail: False
 get_eva_time: False
 3D_show: False
 3D_cell:
+  - 1
+  - 2
+  - 0
+3D_start: 410
+3D_end: 428
+rgb_heatmap: True
+cells:
+  - 28
+  - 29
+  - 30
+  - 31
+  - 32
+  - 33
+  - 34
+dests:
   - 0
   - 1
   - 2
-3D_start: 410
-3D_end: 428
+rgb_start: 200
+rgb_end: 250
+heat_map: True
+heatmap_start: 150
+heatmap_end: 300
 
 destination:
   -
