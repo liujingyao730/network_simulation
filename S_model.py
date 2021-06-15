@@ -16,6 +16,7 @@ class network(object):
         self.link_number = len(net_information["ordinary_cell"].keys())
         self.index2id = {i:list(net_information["ordinary_cell"].keys())[i] for i in range(self.link_number)}
         self.id2index = {list(net_information["ordinary_cell"].keys())[i]:i for i in range(self.link_number)}
+        self.link_list = [self.index2id[i] for i in range(self.link_number)]
         self.index2id[self.link_number] = "end_link"
         self.id2index["end_link"] = self.link_number
 
@@ -107,24 +108,20 @@ class network(object):
         
         self.enter_flow[link, 1:] = self.enter_flow[link, :-1]
         self.enter_flow[link, 0] = enter_flow
-        if enter_flow < 0:
-            a = 1
     
     def update_arrive(self, link):
 
         self.update_sigma_gamma(link)
-        sigma_k = int(self.sigma[link, 1])
-        sigma_k_1 = int(self.sigma[link, 0])
-        gamma_k = self.gamma[link, 1]
-        gamma_k_1 = self.gamma[link, 0]
+        sigma_k = int(self.sigma[link, 0])
+        sigma_k_1 = int(self.sigma[link, 1])
+        gamma_k = self.gamma[link, 0]
+        gamma_k_1 = self.gamma[link, 1]
         enter_1 = self.enter_flow[link, sigma_k]
         enter_2 = self.enter_flow[link, sigma_k_1+1]
         arrive_flow_total = (self.cycle_time[link] - gamma_k) / self.cycle_time[link] * enter_1
         arrive_flow_total += gamma_k_1 / self.cycle_time[link] * enter_2
 
         self.arrive_flow[link] = arrive_flow_total
-        if link == 16:
-            a = 1
 
     def update_leave_to(self, link1, link2):
 
@@ -148,8 +145,6 @@ class network(object):
         factor_3 = factor_3 / (base * self.cycle_time[link1])
 
         self.leave_flow[link1, i] = min(factor_1, factor_2, factor_3)
-        if link1 == 16:
-            a = 1
 
     def update_vehicle_number(self, link):
 
@@ -208,13 +203,14 @@ class network(object):
             self.update_vehicle_number(link)
             self.update_queue_length(link)
     
-    def calculate_loss(self, inputs, targets, input_links, output_links):
+    def calculate_loss(self, inputs, targets, input_links, output_links, show_Detail=False):
 
         output = np.zeros(targets.shape)
 
         input_link_id = [self.id2index[link] for link in input_links]
         output_link_id = [self.id2index[link] for link in output_links]
         self.set_input_output(input_link_id, output_link_id)
+        targets = targets[self.link_list].values
         self.split_rate[output_link_id, 0] = 1
         self.split_rate[output_link_id, 1] = 0
         self.split_rate[output_link_id, 2] = 0
@@ -223,7 +219,16 @@ class network(object):
             self.step(inputs.loc[time*90])
             output[time, :] += self.vehicle_number[:-1]
         
-        return float(mean_squared_error(targets, output))
+        if np.sum(output) > 0:
+            a = 1
+        
+        if show_Detail:
+            return output
+        else:
+            result = float(mean_squared_error(targets, output))
+            if result < 500:
+                a = 1
+            return result
 
 if __name__ == "__main__":
 
