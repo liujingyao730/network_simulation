@@ -23,7 +23,7 @@ output_links = ["-gneE0", "-gneE1", "-gneE2", "-gneE4", "-gneE5", "-gneE6", "-gn
 inputs = inputs.loc[inputs_time_list]
 target = target.loc[outputs_time_list]
 
-x = np.load("four2.npy").flatten()
+x = np.load("genetic_solution.npy").flatten()
 
 net.staturated_flow = x[:3*link_number].reshape((link_number, 3))
 net.split_rate = x[3*link_number:6*link_number].reshape((link_number, 3))
@@ -33,7 +33,9 @@ output = net.calculate_loss(inputs, target, input_links, output_links, show_Deta
 
 fig = plt.figure()
 x = range(output.shape[0])
-plt.plot(x, output[:, 16], label="output")
-plt.plot(x, target.values[:, 16], label="targets")
+# plt.plot(x, output[:, 25], label="output")
+# plt.plot(x, target.values[:, 25], label="targets")
+plt.plot(x, output.sum(axis=1), label="output")
+plt.plot(x, target.values.sum(axis=1), label="targets")
 plt.legend()
 plt.savefig("s_model.png")

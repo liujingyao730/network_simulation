@@ -88,7 +88,7 @@ class network(object):
     def update_sigma_gamma(self, link):
 
         self.sigma[link, 0] = self.sigma[link, 1]
-        self.gamma[link, 0] = self.sigma[link, 1]
+        self.gamma[link, 0] = self.gamma[link, 1]
         factor = (self.capacity[link] - np.sum(self.queue_length[link, :])) * self.vehicle_length / (self.lane_number[link] * self.free_speed[link])
         self.sigma[link, 1] = int(factor / self.cycle_time[link])
         self.gamma[link, 1] = factor - self.sigma[link, 1] * self.cycle_time[link]
@@ -140,7 +140,7 @@ class network(object):
                 base += self.split_rate[link_i, pos]
 
         factor_1 = self.staturated_flow[link1, i] * self.green_time[link1, i] / self.cycle_time[link1]
-        factor_2 = self.queue_length[link1, i] / self.cycle_time[link1] + self.arrive_flow[link1]
+        factor_2 = self.queue_length[link1, i] / self.cycle_time[link1] + self.arrive_flow[link1] * self.split_rate[link1, i] / base
         factor_3 = self.split_rate[link1, i]*(self.capacity[link2] - self.vehicle_number[link2])
         factor_3 = factor_3 / (base * self.cycle_time[link1])
 
@@ -149,6 +149,8 @@ class network(object):
     def update_vehicle_number(self, link):
 
         self.vehicle_number[link] = self.vehicle_number[link] + (self.enter_flow[link, 0] - np.sum(self.leave_flow[link, :])) * self.cycle_time[link]
+        if self.vehicle_number[link] < 0 or self.vehicle_number[link] > self.capacity[link]:
+            a = 1
         self.vehicle_number[link] = min(self.vehicle_number[link], self.capacity[link])
         self.vehicle_number[link] = max(self.vehicle_number[link], 0)
     
@@ -156,7 +158,7 @@ class network(object):
 
         total_queue_length = np.sum(self.queue_length[link, :])
         total_queue_length += (self.arrive_flow[link] - np.sum(self.leave_flow[link, :])) * self.cycle_time[link]
-        if total_queue_length < 0 or total_queue_length > self.capacity[link]:
+        if total_queue_length > self.capacity[link] or total_queue_length < 0:
             a = 1
         total_queue_length = min(total_queue_length, self.capacity[link])
         total_queue_length = max(total_queue_length, 0)

@@ -38,7 +38,6 @@ def loss_func(Phen):
     for i in range(popluation_size):
 
         x = Phen[i, :]
-        net.split_rate = (1 / 3) * np.ones((link_number, 3))
         net.staturated_flow = x[:3*link_number].reshape((link_number, 3))
         net.split_rate = x[3*link_number:6*link_number].reshape((link_number, 3))
         net.capacity[:-1] = x[6*link_number:]
@@ -56,8 +55,10 @@ def loss_func(Phen):
 '''
 var_number = 7 * link_number
 
-upper = np.ones(var_number) * 2
+upper = np.ones(var_number)
 lower = np.zeros(var_number)
+lower[:3*link_number] = 1
+upper[:3*link_number] = 5
 lower[6*link_number:] = 100
 upper[6*link_number:] = 2500
 ranges = np.vstack([lower, upper])
@@ -74,7 +75,7 @@ scales = [0 for i in range(var_number)]
 FieldD = ea.crtfld(Encoding, varTypes, ranges, is_border, precisions, coders, scales)
 
 NIND = 500
-MAXGEN = 1000
+MAXGEN = 2000
 maxormins = np.array([1])
 
 selectStyle = "sus"
