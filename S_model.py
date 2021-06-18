@@ -179,6 +179,7 @@ class network(object):
 
         for link in self.input_links:
             link_id = self.index2id[link]
+            self.enter_flow[link, 1:] = self.enter_flow[link, :-1]
             self.enter_flow[link, 0] = inputs[link_id] / self.cycle_time[link]
 
         for link in self.normal_links:
