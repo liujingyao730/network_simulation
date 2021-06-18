@@ -171,13 +171,13 @@ def test_model(args, data_set):
         sns.heatmap(output_heat, cmap='YlGnBu', linewidths=.5, ax=ax, xticklabels=10, vmax=70)
         plt.xlabel("time step")
         plt.ylabel("cell label")
-        plt.savefig("output_heat.png")
+        plt.savefig("output_heat.png", bbox_inches="tight")
         plt.cla()
         fig, ax = plt.subplots(figsize=(14, 4))
         sns.heatmap(target_heat, cmap='YlGnBu', linewidths=.5, ax=ax, xticklabels=10, vmax=70)
         plt.xlabel("time step")
         plt.ylabel("cell label")
-        plt.savefig("target_heat.png")
+        plt.savefig("target_heat.png", bbox_inches="tight")
         plt.cla()
 
     output = np.sum(output, axis=3)
@@ -231,6 +231,14 @@ def test_model(args, data_set):
         plt.plot(x, predict_cell, label="pd")
         plt.legend()
         plt.savefig("123.png")
+    
+    if args.get("save_output"):
+        save_data = output[0, :, :]
+        save_data = save_data[:, args["save_cells"]].sum(1)
+        test_target = target[0, :, :]
+        test_target = test_target[:, args["save_cells"]].sum(1)
+        np.save("output.npy", save_data)
+        np.save("test_target.npy", test_target)
 
     return ave_error
 
