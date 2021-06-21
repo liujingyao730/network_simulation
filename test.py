@@ -10,13 +10,11 @@ import yaml
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics import mean_squared_error
+import time
 
-from model import GCN_GRU, node_encode_attention
-from coder_model import st_node_encoder, coder_on_dir
 from com_model import replaceable_model,dyn_embedding
 from struct_ablation import single_attention, single_attention_non_gate, baseline
 from gnn_conv import gnn_conv
-from feature_ablation import non_dir_model
 from network import data_on_network
 import dir_manage as d
 from utils import sparselist_to_tensor, from_sparse_get_index, from_sparse_get_reverse_index
@@ -42,6 +40,7 @@ def test_model(args, data_set):
         data_set.show_adj(adj_list[i+args["init_length"]+1], network_type=net_type, with_label=True, colors=np.around(target[0, i, :, 17], decimals=1))
     '''
     # model = GCN_GRU(args)
+    
     model_type = args.get("model_type", "st_node_encoder")
     if model_type == "replaceable_model":
         model = replaceable_model(args)
@@ -80,11 +79,12 @@ def test_model(args, data_set):
     model = model.cuda()
     cell_index = data_set.name_to_id(args["input_cells_name"])
     model.set_input_cells(cell_index)
-
+    time1 = time.time()
     if args["gnn"] == "gat":
         output = model.infer(inputs, adj_list, [index_list, reverse_index_list], [weight_list, reverse_weight_list])
     else:
         output = model.infer(inputs, adj_list)
+    time2 = time.time()
 
     # target = data_set.recovery_data(target)
     # output = data_set.recovery_data(output)
@@ -92,6 +92,8 @@ def test_model(args, data_set):
     target = target.detach().cpu().numpy()
     output = output.detach().cpu().numpy()
     torch.cuda.empty_cache()
+
+    print("计算用时 ", time2 - time1)
 
     if show_detail:
         
@@ -227,8 +229,8 @@ def test_model(args, data_set):
         x = np.array(range(real_cell.shape[0]))
 
         plt.figure(figsize=(10,4))
-        plt.plot(x, real_cell, label="gt")
-        plt.plot(x, predict_cell, label="pd")
+        plt.plot(x, real_cell, label="ground truth")
+        plt.plot(x, predict_cell, label="our model")
         plt.legend()
         plt.savefig("123.png")
     
@@ -253,4 +255,6 @@ if __name__ == "__main__":
     with open(os.path.join(d.cell_data_path, args["net_file"]), 'rb') as f:
         net_information = pickle.load(f)
     data_set = data_on_network(net_information, args["destination"][0], args["prefix"], args)
-    test_model(args, data_set)
+
+    with torch.no_grad():
+        test_model(args, data_set)
