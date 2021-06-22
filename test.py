@@ -65,6 +65,15 @@ def test_model(args, data_set):
     target = torch.Tensor(target)
     adj_list = torch.Tensor(sparselist_to_tensor(adj_list))
 
+    if args.get("expand", False):
+        node_size = args["node_size"]
+        inputs_size = list(inputs.shape)
+        inputs_size[2] = node_size
+        time_size = adj_list.shape[0]
+        inputs = torch.randn(inputs_size)
+        target = torch.randn(inputs_size)
+        adj_list = torch.randn([time_size, node_size, node_size])
+
     if args["gnn"] == "gat":
         index_list, weight_list = from_sparse_get_index(adj_list)
         reverse_index_list, reverse_weight_list = from_sparse_get_reverse_index(adj_list)
@@ -94,6 +103,8 @@ def test_model(args, data_set):
     torch.cuda.empty_cache()
 
     print("计算用时 ", time2 - time1)
+    if args.get("expand", False):
+        return
 
     if show_detail:
         
