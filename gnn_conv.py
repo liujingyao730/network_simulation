@@ -146,7 +146,7 @@ class gnn_conv(nn.Module):
                 outputs[:, i - self.init_length + self.window, predict_cells, :] += self.output_layer(h_3[:, pos, predict_cells, :])
                 outputs[:, i - self.init_length + self.window, self.input_cells, :] += input_data[:, i+1+self.window, self.input_cells, :self.dest_size]
 
-                inputs[:, :2, :, :] = inputs[:, 1:, :, :]
+                inputs[:, :2, :, :] = inputs[:, 1:, :, :].clone()
                 inputs[:, 2, :, :self.dest_size] = outputs[:, i - self.init_length + self.window, :, :]
                 inputs[:, 2, :, self.dest_size:] = input_data[:, i + self.window + 1, :, self.dest_size:]
         

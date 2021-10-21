@@ -29,9 +29,15 @@ def rgb_map(input_data, output_file="rgb_heatmap.png"):
             x = [j*height, (j+1)*height, (j+1)*height, j*height]
             plt.fill(x, y, color=colorx)
     
-    plt.xlabel("time step")
-    plt.ylabel("spatial")
+    plt.xlabel("time step", fontsize=20)
+    plt.ylabel("spatial", fontsize=20)
     plt.xticks([])
+    plt.yticks([])
+    ax = plt.gca()
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
     plt.savefig(output_file, bbox_inches="tight")
 
 if __name__ == "__main__":
