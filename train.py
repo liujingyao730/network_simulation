@@ -73,7 +73,8 @@ def train_epoch(args, model, loss_function, optimizer, meter, sample_rate):
             targets = inputs[:, args["init_length"]+1:, :, :]
 
             if use_cuda:
-                adj_list = adj_list.cuda()
+                if not model_type:
+                    adj_list = adj_list.cuda()
                 targets = targets.cuda()
                 inputs = inputs.cuda()
 
@@ -161,7 +162,8 @@ def test_epoch(args, model, loss_function, meter):
             targets = inputs[:, args["init_length"]+1:, :, :]
  
             if use_cuda:
-                adj_list = adj_list.cuda()
+                if not model_type:
+                    adj_list = adj_list.cuda()
                 targets = targets.cuda()
                 inputs = inputs.cuda()
 
@@ -218,8 +220,18 @@ def train(args):
     elif model_type == "gnn_conv":
         model = gnn_conv(args)
     elif model_type == "GMAN":
-        SE_file = args.get("SE_file", os.path.join(d.cell_data_path, "four_large_SE.txt"))
+        SE_file = args.get("SE_file", "four_large_SE.txt")
+        SE_file = os.path.join(d.cell_data_path, SE_file)
         model = Gman_sim(SE_file, args, bn_decay=0.1)
+        with open(SE_file, 'r') as f:
+            lines = f.readlines()
+            temp = lines[0].split(' ')
+            num_vertex, dims = int(temp[0]), int(temp[1])
+            SE = torch.zeros((num_vertex, dims), dtype=torch.float32)
+            for line in lines[1:]:
+                temp = line.split(' ')
+                index = int(temp[0])
+                SE[index] = torch.tensor([float(ch) for ch in temp[1:]])
     else:
         raise NotImplementedError
     # model = non_dir_model(args)

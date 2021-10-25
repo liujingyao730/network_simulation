@@ -1,4 +1,5 @@
 import torch
+from torch.autograd.variable import Variable
 import torch.nn as nn
 import torch.nn.functional as F
 import math
@@ -73,20 +74,22 @@ class STEmbedding(nn.Module):
             bn_decay=bn_decay)
 
         self.FC_te = FC(
-            input_dims=[295, D], units=[D, D], activations=[F.relu, None],
+            input_dims=[307, D], units=[D, D], activations=[F.relu, None],
             bn_decay=bn_decay)  # input_dims = time step per day + days per week=288+7=295
 
-    def forward(self, SE, TE, T=288):
+    def forward(self, SE, TE, T=300):
         # spatial embedding
         SE = SE.unsqueeze(0).unsqueeze(0)
         SE = self.FC_se(SE)
         # temporal embedding
-        dayofweek = torch.empty(TE.shape[0], TE.shape[1], 7)
-        timeofday = torch.empty(TE.shape[0], TE.shape[1], T)
+        dayofweek = Variable(TE.data.new(TE.shape[0], TE.shape[1], 7))
+        timeofday = Variable(TE.data.new(TE.shape[0], TE.shape[1], T))
+        # dayofweek = torch.empty(TE.shape[0], TE.shape[1], 7)
+        # timeofday = torch.empty(TE.shape[0], TE.shape[1], T)
         for i in range(TE.shape[0]):
             dayofweek[i] = F.one_hot(TE[..., 0][i].to(torch.int64) % 7, 7)
         for j in range(TE.shape[0]):
-            timeofday[j] = F.one_hot(TE[..., 1][j].to(torch.int64) % 288, T)
+            timeofday[j] = F.one_hot(TE[..., 1][j].to(torch.int64) % 300, T)
         TE = torch.cat((dayofweek, timeofday), dim=-1)
         TE = TE.unsqueeze(dim=2)
         TE = self.FC_te(TE)

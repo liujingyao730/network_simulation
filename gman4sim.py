@@ -22,7 +22,8 @@ class Gman_sim(nn.Module):
                 index = int(temp[0])
                 SE[index] = torch.tensor([float(ch) for ch in temp[1:]])
 
-        self.gman = GMAN(SE, args, bn_decay)
+        self.SE = nn.Parameter(SE)
+        self.gman = GMAN(self.SE, args, bn_decay)
         self.history_length = args['num_his']
         self.init_length = args["init_length"]
         self.output_size = args["output_size"]
@@ -37,6 +38,7 @@ class Gman_sim(nn.Module):
             ), dim=1
         )
         self.base_TE.unsqueeze_(0)
+        self.base_TE = nn.Parameter(self.base_TE)
     
     def set_input_cells(self, input_cells):
 
