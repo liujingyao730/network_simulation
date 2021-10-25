@@ -31,9 +31,9 @@ class Gman_sim(nn.Module):
         self.cycle_time = args.get("cycle", 90)
         
         self.base_TE = torch.cat(
-            (  
+            (
                 torch.zeros(self.history_length+1, 1),
-                torch.range(start=0, end=self.history_length).unsqueeze(1)
+                torch.arange(self.history_length+1).unsqueeze(1)
             ), dim=1
         )
         self.base_TE.unsqueeze_(0)

@@ -13,7 +13,9 @@ import argparse
 from model import GCN_GRU, node_encode_attention
 from coder_model import st_node_encoder, coder_on_dir
 from com_model import replaceable_model, dyn_embedding
+from gnn_conv import gnn_conv
 from struct_ablation import single_attention, single_attention_non_gate, baseline
+from gman4sim import Gman_sim
 from feature_ablation import non_dir_model
 from network import data_on_network
 import dir_manage as d
@@ -32,6 +34,7 @@ def train_epoch(args, model, loss_function, optimizer, meter, sample_rate):
     dest_weight = args.get("dest_weigh", 1)
     net_weight = args.get("net_weight", 1)
     total_weight = args.get("total_weight", 1)
+    model_type = args.get("model_type", None)
 
     batch_index = 0
 
@@ -62,7 +65,10 @@ def train_epoch(args, model, loss_function, optimizer, meter, sample_rate):
                     weight_list = weight_list.cuda()
                     reverse_weight_list = reverse_weight_list.cuda()
 
-            adj_list = Variable(torch.Tensor(sparselist_to_tensor(adj_list)))
+            if model_type == "GMAN":
+                adj_list = data_set.index
+            else:
+                adj_list = Variable(torch.Tensor(sparselist_to_tensor(adj_list)))
             inputs = Variable(torch.Tensor(data))
             targets = inputs[:, args["init_length"]+1:, :, :]
 
@@ -121,6 +127,7 @@ def test_epoch(args, model, loss_function, meter):
     input_cells_name = args.get("test_input_cells_name", [["gneE0-0", "-gneE3-0", "-gneE4-0", "-gneE5-0", "-gneE2-0", "-gneE6-0"]])
     use_cuda = args.get("use_cuda", True)
     show_every = args.get("show_every", 100)
+    model_type = args.get("model_type", None)
 
     batch_index = 0
 
@@ -146,7 +153,10 @@ def test_epoch(args, model, loss_function, meter):
                     weight_list = weight_list.cuda()
                     reverse_weight_list = reverse_weight_list.cuda()
 
-            adj_list = torch.Tensor(sparselist_to_tensor(adj_list))
+            if model_type == "GMAN":
+                adj_list = data_set.index
+            else:
+                adj_list = torch.Tensor(sparselist_to_tensor(adj_list))
             inputs = torch.Tensor(inputs)
             targets = inputs[:, args["init_length"]+1:, :, :]
  
@@ -194,7 +204,24 @@ def train(args):
         print(key, " ", args[key])
         log_file.write(key+"  "+str(args[key])+'\n')
 
-    model = replaceable_model(args)
+    model_type = args.get("model_type", "st_node_encoder")
+    if model_type == "replaceable_model":
+        model = replaceable_model(args)
+    elif model_type == "dyn_embedding":
+        model = dyn_embedding(args)
+    elif model_type == "single_attention":
+        model = single_attention(args)
+    elif model_type == "single_attention_non_gate":
+        model = single_attention_non_gate(args)
+    elif model_type == "baseline":
+        model = baseline(args)
+    elif model_type == "gnn_conv":
+        model = gnn_conv(args)
+    elif model_type == "GMAN":
+        SE_file = args.get("SE_file", os.path.join(d.cell_data_path, "four_large_SE.txt"))
+        model = Gman_sim(SE_file, args, bn_decay=0.1)
+    else:
+        raise NotImplementedError
     # model = non_dir_model(args)
     # model = dyn_embedding(args)
     # model = single_attention(args)
