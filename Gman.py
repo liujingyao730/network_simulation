@@ -322,25 +322,26 @@ class GMAN(nn.Module):
 
     def __init__(self, SE, args, bn_decay):
         super(GMAN, self).__init__()
-        L = args.L
-        K = args.K
-        d = args.d
+        L = args['L']
+        K = args['K']
+        d = args['d']
         D = K * d
-        self.num_his = args.num_his
+        input_size = args["input_size"]
+        output_size = args["output_size"]
+        self.num_his = args['num_his']
         self.SE = SE
         self.STEmbedding = STEmbedding(D, bn_decay)
         self.STAttBlock_1 = nn.ModuleList([STAttBlock(K, d, bn_decay) for _ in range(L)])
         self.STAttBlock_2 = nn.ModuleList([STAttBlock(K, d, bn_decay) for _ in range(L)])
         self.transformAttention = transformAttention(K, d, bn_decay)
-        self.FC_1 = FC(input_dims=[1, D], units=[D, D], activations=[F.relu, None],
+        self.FC_1 = FC(input_dims=[input_size, D], units=[D, D], activations=[F.relu, None],
                        bn_decay=bn_decay)
-        self.FC_2 = FC(input_dims=[D, D], units=[D, 1], activations=[F.relu, None],
+        self.FC_2 = FC(input_dims=[D, D], units=[D, output_size], activations=[F.relu, None],
                        bn_decay=bn_decay)
 
     def forward(self, X, TE):
 
         # input
-        X = torch.unsqueeze(X, -1)
         X = self.FC_1(X)
         # STE
         STE = self.STEmbedding(self.SE, TE)
@@ -357,4 +358,4 @@ class GMAN(nn.Module):
         # output
         X = self.FC_2(X)
         del STE, STE_his, STE_pred
-        return torch.squeeze(X, 3)
+        return X

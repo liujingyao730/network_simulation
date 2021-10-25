@@ -25,12 +25,12 @@ def read_graph(edgelist):
 def learn_embeddings(walks, dimensions, output_file):
     walks = [list(map(str, walk)) for walk in walks]
     model = Word2Vec(walks,
-                     size=dimensions,
+                     vector_size=dimensions,
                      window=10,
                      min_count=0,
                      sg=1,
                      workers=8,
-                     iter=iter)
+                     epochs=iter)
     model.wv.save_word2vec_format(output_file)
 
     return
