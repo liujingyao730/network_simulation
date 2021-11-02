@@ -10,9 +10,14 @@ import time
 import dir_manage
 from S_model import network
 
+mean_value = True
+
 net_pickle = "four_large.pkl"
 inputs_file = os.path.join(dir_manage.cell_data_path, "four_2_inputs.csv")
-target_file = os.path.join(dir_manage.cell_data_path, "four_2_target.csv")
+if mean_value:
+    target_file = os.path.join(dir_manage.cell_data_path, "four_2_target_mean.csv")
+else:
+    target_file = os.path.join(dir_manage.cell_data_path, "four_2_target.csv")
 inputs = pd.read_csv(inputs_file, index_col=0)
 target = pd.read_csv(target_file, index_col=0)
 with open(os.path.join(dir_manage.cell_data_path, net_pickle), "rb") as f:
@@ -23,6 +28,17 @@ outputs_time_list = [(i+1)*90 for i in range(40)]
 net = network(net_pickle)
 input_links = list(inputs.columns)
 output_links = ["-gneE0", "-gneE1", "-gneE2", "-gneE4", "-gneE5", "-gneE6", "-gneE12", "-gneE13", "-gneE15", "-gneE14", "-gneE8", "-gneE10"]
+
+# if mean_value:
+#     i = 0
+#     a = pd.DataFrame(columns=target.columns)
+#     while i+900 < target.shape[0]:
+#         start_time = target.index[i]
+#         end_time = target.index[i+899]
+#         a.loc[i] = target.loc[start_time:end_time].sum() / 900
+#         i += 1
+#     target = a
+
 inputs = inputs.loc[inputs_time_list]
 target = target.loc[outputs_time_list]
 
@@ -74,7 +90,7 @@ scales = [0 for i in range(var_number)]
 
 FieldD = ea.crtfld(Encoding, varTypes, ranges, is_border, precisions, coders, scales)
 
-NIND = 500
+NIND = 200
 MAXGEN = 2000
 maxormins = np.array([1])
 
@@ -84,7 +100,7 @@ mutStyle = "mutbin"
 Lind = int(np.sum(FieldD[0, :]))
 
 pc = 0.9
-pm = 10 / Lind
+pm = 1 / Lind
 obj_trace = np.zeros((MAXGEN, 2))
 var_trace = np.zeros((MAXGEN, Lind))
 
