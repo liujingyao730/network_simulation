@@ -223,15 +223,6 @@ def train(args):
         SE_file = args.get("SE_file", "four_large_SE.txt")
         SE_file = os.path.join(d.cell_data_path, SE_file)
         model = Gman_sim(SE_file, args, bn_decay=0.1)
-        with open(SE_file, 'r') as f:
-            lines = f.readlines()
-            temp = lines[0].split(' ')
-            num_vertex, dims = int(temp[0]), int(temp[1])
-            SE = torch.zeros((num_vertex, dims), dtype=torch.float32)
-            for line in lines[1:]:
-                temp = line.split(' ')
-                index = int(temp[0])
-                SE[index] = torch.tensor([float(ch) for ch in temp[1:]])
     else:
         raise NotImplementedError
     # model = non_dir_model(args)

@@ -39,6 +39,8 @@ class Gman_sim(nn.Module):
         )
         self.base_TE.unsqueeze_(0)
         self.base_TE = nn.Parameter(self.base_TE)
+        self.base_TE.detach_()
+        self.SE.detach_()
     
     def set_input_cells(self, input_cells):
 
@@ -78,7 +80,7 @@ class Gman_sim(nn.Module):
 
             output[:, i, :, :] += tmp_output.squeeze(1)
 
-            input[:, :-1, :, :] = input[:, 1:, :, :]
+            input[:, :-1, :, :] = input[:, 1:, :, :].clone()
             input[:, -1, :, self.output_size:] = X[:, i, :, self.output_size:]
 
             if mod == "train":

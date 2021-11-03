@@ -15,6 +15,7 @@ import time
 from com_model import replaceable_model,dyn_embedding
 from struct_ablation import single_attention, single_attention_non_gate, baseline
 from gnn_conv import gnn_conv
+from gman4sim import Gman_sim
 from network import data_on_network
 import dir_manage as d
 from utils import sparselist_to_tensor, from_sparse_get_index, from_sparse_get_reverse_index
@@ -54,6 +55,10 @@ def test_model(args, data_set):
         model = baseline(args)
     elif model_type == "gnn_conv":
         model = gnn_conv(args)
+    elif model_type == "GMAN":
+        SE_file = args.get("SE_file", "four_large_SE.txt")
+        SE_file = os.path.join(d.cell_data_path, SE_file)
+        model = Gman_sim(SE_file, args, bn_decay=0.1)
     else:
         raise NotImplementedError
     model_file = os.path.join(d.log_path, args["model_prefix"], str(args["model"])+'.tar')
@@ -63,7 +68,10 @@ def test_model(args, data_set):
 
     inputs = torch.Tensor(inputs)
     target = torch.Tensor(target)
-    adj_list = torch.Tensor(sparselist_to_tensor(adj_list))
+    if model_type == "GMAN":
+        adj_list = data_set.index
+    else:
+        adj_list = torch.Tensor(sparselist_to_tensor(adj_list))
 
     if args.get("expand", False):
         node_size = args["node_size"]
@@ -82,9 +90,10 @@ def test_model(args, data_set):
         weight_list = weight_list.cuda()
         reverse_weight_list = reverse_weight_list.cuda()
 
+    if model_type != "GMAN":
+        adj_list = adj_list.cuda()
     inputs = inputs.cuda()
     target = target.cuda()
-    adj_list = adj_list.cuda()
     model = model.cuda()
     cell_index = data_set.name_to_id(args["input_cells_name"])
     model.set_input_cells(cell_index)
@@ -182,14 +191,14 @@ def test_model(args, data_set):
 
         fig, ax = plt.subplots(figsize=(14, 4))
         sns.heatmap(output_heat, cmap='YlGnBu', linewidths=.5, ax=ax, xticklabels=10, vmax=70)
-        plt.xlabel("time step")
-        plt.ylabel("cell label")
+        plt.xlabel("time step", fontsize=20)
+        plt.ylabel("cell label", fontsize=20)
         plt.savefig("output_heat.png", bbox_inches="tight")
         plt.cla()
         fig, ax = plt.subplots(figsize=(14, 4))
         sns.heatmap(target_heat, cmap='YlGnBu', linewidths=.5, ax=ax, xticklabels=10, vmax=70)
-        plt.xlabel("time step")
-        plt.ylabel("cell label")
+        plt.xlabel("time step", fontsize=20)
+        plt.ylabel("cell label", fontsize=20)
         plt.savefig("target_heat.png", bbox_inches="tight")
         plt.cla()
 
@@ -240,25 +249,33 @@ def test_model(args, data_set):
         x = np.array(range(real_cell.shape[0]))
 
         plt.figure(figsize=(10,4))
-        plt.plot(x, real_cell, label="ground truth")
-        plt.plot(x, predict_cell, label="our model")
+        plt.plot(x, real_cell)
+        # plt.plot(x, predict_cell, label="our model")
         plt.legend()
+        plt.xlabel("time step")
+        plt.ylabel("vehicle number")
         plt.savefig("123.png")
     
-    if args.get("save_output"):
+    if args.get("save_output", False):
         save_data = output[0, :, :]
         save_data = save_data[:, args["save_cells"]].sum(1)
         test_target = target[0, :, :]
         test_target = test_target[:, args["save_cells"]].sum(1)
         np.save("output.npy", save_data)
         np.save("test_target.npy", test_target)
+    
+    if args.get("save_net_total", False):
+        outputf = args["model_output_file"]
+        targetf = args["target_output_file"]
+        np.save(outputf, output[0, :, 32])
+        np.save(targetf, target[0, :, 32])
 
     return ave_error
 
 
 if __name__ == "__main__":
 
-    basic_conf = os.path.join(d.config_data_path, "four_large_test.yaml")
+    basic_conf = os.path.join(d.config_data_path, "four_test1.yaml")
 
     with open(basic_conf, 'rb') as f:
         args = yaml.load(f, Loader=yaml.FullLoader)

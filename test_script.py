@@ -15,13 +15,15 @@ with open(basic_conf, 'rb') as f:
 # model_dict = {"replaceable_model": "fix_42_2"}
 # model_dict = {"dyn_embedding": "dyn_embedding_256"}
 # model_dict = {"single_attention":"single_gate_2_8"}
-model_dict = {"baseline": "gat_lstm_1_4"}
+# model_dict = {"baseline": "gat_lstm_1_4"}
+model_dict = {"GMAN":"gman"}
 data_prefix = ["four_low3", "four_low5", "four_6", "four_5"]
 data_sets = {}
 # model_result = {"replaceable_model": np.zeros((30, 4))}
 # model_result = {"single_attention": np.zeros((30, 4))}
-model_result = {"baseline": np.zeros((60, 4))}
-model_range = list(range(20, 80))
+# model_result = {"baseline": np.zeros((60, 4))}
+model_result = {"GMAN": np.zeros((30, 4))}
+model_range = list(range(20, 50))
 args["plot"] = False
 with open(os.path.join(d.cell_data_path, args["net_file"]), 'rb') as f:
     net_information = pickle.load(f)
@@ -36,7 +38,7 @@ for model_type in model_dict.keys():
     args["model_prefix"] = model_prefix
     args["show_cell"] = None
     args["hidden_size"] = 256
-    args["gnn"] = "gat"
+    args["gnn"] = "gcn"
     args["rnn"] = "lstm"
     args["plot"] = False
     args["get_eva_time"] = False
@@ -56,4 +58,5 @@ for model_type in model_dict.keys():
 # np.save("weight_42_2.npy", model_result["replaceable_model"])
 # np.save("dyn_embedding_256.npy", model_result["dyn_embedding"])
 # np.save("single_att_2_8.npy", model_result["single_attention"])
-np.save("gat_lstm.npy", model_result["baseline"])
+# np.save("gat_lstm.npy", model_result["baseline"])
+np.save("gman.npy", model_result["GMAN"])

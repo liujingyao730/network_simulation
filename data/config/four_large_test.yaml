@@ -1,8 +1,6 @@
 input_size: 46
 hidden_size: 256
 output_size: 8
-gnn: gcn
-rnn: lstm
 
 use_cuda: True
 num_epochs: 50
@@ -19,17 +17,62 @@ sim_step: 0.1
 deltaT: 5
 batch_size: 1
 
-model_type: baseline
-model_prefix: baseline1
-model: 47
+model_type: GMAN
+SE_file: four_large_SE.txt
+num_his: 8
+
+L: 1
+K: 8
+d: 8
+
+# model_type: replaceable_model
+# model_prefix: change_weight_4
+# model: 47
+gnn: gcn
+rnn: lstm
+
+# model_type: single_attention
+# model_prefix: single_gate3
+# model: 49
+
+# model_type: single_attention_non_gate
+# model_prefix: single_attention_non_gate
+# model: 40
+
+# model_type: baseline
+# model_prefix: baseline2
+# model: 32
+
+# model_type: baseline
+# model_prefix: gat_lstm_1_4
+# model: 74
+
+# gnn: gat
+# rnn: lstm
+# model_type: baseline
+# model_prefix: gat_lstm
+# model: 47
+
+# model_type: baseline
+# model_prefix: gcn_gru
+# model: 49
+# gnn: gcn
+# rnn: gru
+
+# model_type: gnn_conv
+# model_prefix: gnn_conv
+# model: 40
+# gnn: gcn
+# rnn: conv
+# hidden_size: 64
 
 prefix: 
-  - four_4
+  - four_6
 
-show_cell: 33
+show_cell: 
 show_start: 0
-show_end: 1000
-plot: True
+show_end: 900
+plot: False
 show_detail: False
 get_eva_time: False
 3D_show: False
@@ -52,11 +95,23 @@ dests:
   - 0
   - 1
   - 2
-rgb_start: 200
-rgb_end: 250
-heat_map: True
-heatmap_start: 150
-heatmap_end: 300
+rgb_start: 250
+rgb_end: 350
+heat_map: False
+heatmap_start: 300
+heatmap_end: 450
+
+save_output: False
+save_cells:
+  - 55
+  - 56
+
+expand: False
+node_size: 600
+
+save_net_total: False
+model_output_file: SimNET_BA_33.npy
+target_output_file: 33.npy
 
 destination:
   -
