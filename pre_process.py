@@ -1,6 +1,7 @@
 import xml.etree.cElementTree as etree
 import pandas as pd
 import os
+from pandas.tseries import offsets
 import seaborn as sns
 import numpy as np
 from numpy.random import randn
@@ -21,8 +22,10 @@ dest3 = pd.DataFrame()
 dest4 = pd.DataFrame()
 dest5 = pd.DataFrame()
 dest6 = pd.DataFrame()
+dest7 = pd.DataFrame()
+dest8 = pd.DataFrame()
 
-dest = [dest1, dest2, dest3, dest4, dest5, dest6]
+dest = [dest1, dest2, dest3, dest4, dest5, dest6, dest7, dest8]
 
 def net_resolve(net_file, pickle_file):
 
@@ -179,7 +182,7 @@ def net_resolve(net_file, pickle_file):
 
 def init_dataframe(ordinary_cell, junction_cell):
 
-    global dest1, dest2, dest3, dest4, dest5, dest6, dest
+    global dest1, dest2, dest3, dest4, dest5, dest6, dest7, dest8, dest
 
     cells = list(set(junction_cell.values()))
     for edge in ordinary_cell.keys():
@@ -191,12 +194,13 @@ def init_dataframe(ordinary_cell, junction_cell):
     dest4 = pd.DataFrame(columns=cells)
     dest5 = pd.DataFrame(columns=cells)
     dest6 = pd.DataFrame(columns=cells)
+    dest7 = pd.DataFrame(columns=cells)
 
-    dest = [dest1, dest2, dest3, dest4, dest5, dest6]
+    dest = [dest1, dest2, dest3, dest4, dest5, dest6, dest7, dest8]
 
 def add_time(time):
 
-    global dest1, dest2, dest3, dest4, dest5, dest6, dest
+    global dest1, dest2, dest3, dest4, dest5, dest6, dest7, dest8, dest
 
     dest1.loc[time] = 0
     dest2.loc[time] = 0
@@ -204,19 +208,23 @@ def add_time(time):
     dest4.loc[time] = 0
     dest5.loc[time] = 0
     dest6.loc[time] = 0
+    dest7.loc[time] = 0
+    dest8.loc[time] = 0
 
-    dest = [dest1, dest2, dest3, dest4, dest5, dest6]
+    dest = [dest1, dest2, dest3, dest4, dest5, dest6, dest7, dest8]
 
 def save_file(prefix):
 
-    global dest1, dest2, dest3, dest4, dest5, dest6, dest
+    global dest1, dest2, dest3, dest4, dest5, dest7, dest8, dest
 
-    dest1_file = os.path.join(data_fold, prefix+"_dest1.csv")
-    dest2_file = os.path.join(data_fold, prefix+"_dest2.csv")
-    dest3_file = os.path.join(data_fold, prefix+"_dest3.csv")
-    dest4_file = os.path.join(data_fold, prefix+"_dest4.csv")
-    dest5_file = os.path.join(data_fold, prefix+"_dest5.csv")
-    dest6_file = os.path.join(data_fold, prefix+"_dest6.csv")
+    dest1_file = os.path.join(d.cell_data_path, prefix+"_dest1.csv")
+    dest2_file = os.path.join(d.cell_data_path, prefix+"_dest2.csv")
+    dest3_file = os.path.join(d.cell_data_path, prefix+"_dest3.csv")
+    dest4_file = os.path.join(d.cell_data_path, prefix+"_dest4.csv")
+    dest5_file = os.path.join(d.cell_data_path, prefix+"_dest5.csv")
+    dest6_file = os.path.join(d.cell_data_path, prefix+"_dest6.csv")
+    dest7_file = os.path.join(d.cell_data_path, prefix+"_dest7.csv")
+    dest8_file = os.path.join(d.cell_data_path, prefix+"_dest8.csv")
 
     dest1.to_csv(dest1_file)
     dest2.to_csv(dest2_file)
@@ -224,19 +232,23 @@ def save_file(prefix):
     dest4.to_csv(dest4_file)
     dest5.to_csv(dest5_file)
     dest6.to_csv(dest6_file)
+    dest7.to_csv(dest7_file)
+    dest8.to_csv(dest8_file)
 
     print("data file have saved with prefix ", prefix)
 
 def load_file(prefix):
 
-    global dest1, dest2, dest3, dest4, dest5, dest6, dest
+    global dest1, dest2, dest3, dest4, dest5, dest6, dest7, dest8, dest
 
-    dest1_file = os.path.join(data_fold, prefix+"_dest1.csv")
-    dest2_file = os.path.join(data_fold, prefix+"_dest2.csv")
-    dest3_file = os.path.join(data_fold, prefix+"_dest3.csv")
-    dest4_file = os.path.join(data_fold, prefix+"_dest4.csv")
-    dest5_file = os.path.join(data_fold, prefix+"_dest5.csv")
-    dest6_file = os.path.join(data_fold, prefix+"_dest6.csv")
+    dest1_file = os.path.join(d.cell_data_path, prefix+"_dest1.csv")
+    dest2_file = os.path.join(d.cell_data_path, prefix+"_dest2.csv")
+    dest3_file = os.path.join(d.cell_data_path, prefix+"_dest3.csv")
+    dest4_file = os.path.join(d.cell_data_path, prefix+"_dest4.csv")
+    dest5_file = os.path.join(d.cell_data_path, prefix+"_dest5.csv")
+    dest6_file = os.path.join(d.cell_data_path, prefix+"_dest6.csv")
+    dest7_file = os.path.join(d.cell_data_path, prefix+"_dest7.csv")
+    dest8_file = os.path.join(d.cell_data_path, prefix+"_dest8.csv")
 
     dest1 = pd.read_csv(dest1_file, index_col=0)
     dest2 = pd.read_csv(dest2_file, index_col=0)
@@ -244,13 +256,15 @@ def load_file(prefix):
     dest4 = pd.read_csv(dest4_file, index_col=0)
     dest5 = pd.read_csv(dest5_file, index_col=0)
     dest6 = pd.read_csv(dest6_file, index_col=0)
+    dest7 = pd.read_csv(dest7_file, index_col=0)
+    dest8 = pd.read_csv(dest8_file, index_col=0)
 
-    dest = [dest1, dest2, dest3, dest4, dest5, dest6]
+    dest = [dest1, dest2, dest3, dest4, dest5, dest6, dest7, dest8]
 
 
 def fcd_resolve(fcd_file, net_information, prefix="default"):
 
-    global dest1, dest2, dest3, dest4, dest5, dest6, dest
+    global dest1, dest2, dest3, dest4, dest5, dest6, dest7, dest8, dest
 
     ordinary_cell = net_information["ordinary_cell"]
     junction_cell = net_information["junction_cell"]
@@ -413,30 +427,60 @@ def enlarge_gap(base_line, best_distance, keys):
 
     return base_line
 
+def merge_target(prefix, ordinary_cells, save_origin_merge=False):
+    
+    global dest1, dest2, dest3, dest4, dest5, dest6, dest7, dest8, dest
+    load_file(prefix)
+    vehicle_number = dest1 + dest2 + dest3 + dest4 + dest5 + dest6 + dest7 + dest8
+    
+    merge_data = pd.DataFrame(index=dest1.index, columns=ordinary_cells.keys())
+    merge_data = merge_data.fillna(0)
+    for link in merge_data.columns:
+        for cell in ordinary_cells[link]['cell_id']:
+            merge_data[link] += vehicle_number[cell]
+    
+    silde_window = merge_data.rolling(window=900, min_periods=1).mean()
+    file = os.path.join(d.cell_data_path, prefix+'_merge.csv')
+    silde_window.to_csv(file)
+    if save_origin_merge:
+        origin_file = os.path.join(d.cell_data_path, prefix+'_merge_origin.csv')
+        merge_data.to_csv(origin_file)
+
+
 if __name__ == "__main__":
-    net_file = "four_test1.net.xml"
+    net_file = "four_large.net.xml"
     fcd_file = "fcd.xml"
     data_fold = "data"
     pickle_file = "test.pkl"
 
-    layout = calculate_layout(net_file, pickle_file, best_distance=50)
-
     with open("test.pkl", 'rb') as f:
         net_information = pickle.load(f)
-    basic_conf = basic_conf = os.path.join(d.config_data_path, "four_test1.yaml")
+    basic_conf = basic_conf = os.path.join(d.config_data_path, "four_large_test.yaml")
     with open(basic_conf, 'rb') as f:
         args = yaml.load(f, Loader=yaml.FullLoader)
-
-    destiantion = args["destination"][0]
-    prefix = args["prefix"]
-    args = {}
-    args["sim_step"] = 0.1
-    args["deltaT"] = 5
-    args["temporal_length"] = 20
-    args["init_length"] = 4
-    args["start"] = 0
-    args["use_cuda"] = True
-    args["dest_number"] = 6
-    a = data_on_network(net_information, destiantion, prefix, args)
-    inputs, adj_list = a.get_batch()
-    a.show_adj(a.all_adj, network_type=layout, colors=a.network_feature[0, :, a.is_junction_loc], with_label=True, figure_size=(15, 10))
+    merge_target("four_1", net_information["ordinary_cell"], True)
+    # destiantion = args["destination"][0]
+    # prefix = args["prefix"]
+    # input_cells_name = args["input_cells_name"]
+    # args = {}
+    # args["sim_step"] = 0.1
+    # args["deltaT"] = 5
+    # args["temporal_length"] = 20
+    # args["init_length"] = 4
+    # args["start"] = 0
+    # args["use_cuda"] = True
+    # args["dest_number"] = 6
+    # a = data_on_network(net_information, destiantion, prefix, args)
+    # input_cells = a.name_to_id(input_cells_name)
+    # output_cells = a.name_to_id(destiantion)
+    # is_input = []
+    # for i in range(a.N):
+    #     if i in input_cells:
+    #         is_input.append(-1)
+    #     elif i in output_cells:
+    #         is_input.append(1)
+    #     else:
+    #         is_input.append(0)
+    # inputs, adj_list = a.get_batch()
+    # layout = calculate_layout(net_file, pickle_file, best_distance=50)
+    # a.show_adj(a.all_adj, network_type=layout, colors=is_input, with_label=False, figure_size=(15, 10))
