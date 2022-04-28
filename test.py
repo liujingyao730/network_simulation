@@ -169,12 +169,14 @@ def test_model(args, data_set):
         if len(dests) > 3:
             raise Exception('最多只能显示3个终点分量')
 
-        inputs = output[0, start_t:end_t, cells, :]
-        inputs = inputs[:, :, dests]
-        rgb_map(inputs, output_file='output_rgb_heat.png')
-        inputs = target[0, start_t:end_t, cells, :args["output_size"]]
-        inputs = inputs[:, :, dests]
-        rgb_map(inputs, output_file="target_rgb_heat.png")
+        inputs1 = output[0, start_t:end_t, cells, :]
+        inputs1 = inputs1[:, :, dests]
+        rgb_map(inputs1, output_file='output_rgb_heat.png')
+        inputs2 = target[0, start_t:end_t, cells, :args["output_size"]]
+        inputs2 = inputs2[:, :, dests]
+        rgb_map(inputs2, output_file="target_rgb_heat.png")
+        inputs3 = np.abs(inputs1-inputs2)
+        rgb_map(inputs3, output_file="error_rate_file.png", is_error=True)
     
     heatmap = args.get("heat_map", False)
     if heatmap:
@@ -192,13 +194,13 @@ def test_model(args, data_set):
         fig, ax = plt.subplots(figsize=(14, 4))
         sns.heatmap(output_heat, cmap='YlGnBu', linewidths=.5, ax=ax, xticklabels=10, vmax=70)
         plt.xlabel("time step", fontsize=20)
-        plt.ylabel("cell label", fontsize=20)
+        plt.ylabel("nodes", fontsize=20)
         plt.savefig("output_heat.png", bbox_inches="tight")
         plt.cla()
         fig, ax = plt.subplots(figsize=(14, 4))
         sns.heatmap(target_heat, cmap='YlGnBu', linewidths=.5, ax=ax, xticklabels=10, vmax=70)
         plt.xlabel("time step", fontsize=20)
-        plt.ylabel("cell label", fontsize=20)
+        plt.ylabel("nodes", fontsize=20)
         plt.savefig("target_heat.png", bbox_inches="tight")
         plt.cla()
 
@@ -275,7 +277,7 @@ def test_model(args, data_set):
 
 if __name__ == "__main__":
 
-    basic_conf = os.path.join(d.config_data_path, "four_test1.yaml")
+    basic_conf = os.path.join(d.config_data_path, "four_large_test.yaml")
 
     with open(basic_conf, 'rb') as f:
         args = yaml.load(f, Loader=yaml.FullLoader)

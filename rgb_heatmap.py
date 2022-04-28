@@ -1,14 +1,17 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def rgb_map(input_data, output_file="rgb_heatmap.png"):
+def rgb_map(input_data, output_file="rgb_heatmap.png", is_error=False):
 
     temporal, sptial, c = input_data.shape
 
     input_data += 1
     max_num = 90
     factor = 256 / max_num
-    rgb = (16*np.sqrt(input_data * factor)).astype('int')
+    if is_error:
+        rgb = (256-16*np.sqrt(input_data * factor)).astype('int')
+    else:
+        rgb = (16*np.sqrt(input_data * factor)).astype('int')
     width = 4
     height = 2
     fig = plt.figure(figsize=(15, 5))
@@ -30,9 +33,9 @@ def rgb_map(input_data, output_file="rgb_heatmap.png"):
             plt.fill(x, y, color=colorx)
     
     plt.xlabel("time step", fontsize=20)
-    plt.ylabel("spatial", fontsize=20)
-    plt.xticks([])
-    plt.yticks([])
+    plt.ylabel("nodes", fontsize=20)
+    plt.xticks([1, 51, 101, 151, 201], [0, 25, 50, 75, 100])
+    plt.yticks([2, 6, 10, 14, 18, 22, 26],[28, 29, 30, 31, 32, 33, 34])
     ax = plt.gca()
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
