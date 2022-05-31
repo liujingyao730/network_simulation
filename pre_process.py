@@ -330,7 +330,6 @@ def calculate_layout(net_file, pickle_file, best_distance=50):
     root = tree.getroot()
 
     base_line = {}
-    keys = []
     layout = {}
 
     for child in root:
@@ -356,10 +355,6 @@ def calculate_layout(net_file, pickle_file, best_distance=50):
             y /= lane_number
 
             base_line[edge] = [x, y]
-            if edge[0] != '-':
-                keys.append(edge)
-
-    baseline = enlarge_gap(base_line, best_distance, keys)
 
     for edge in ordinary_cell.keys():
         divide_number = len(ordinary_cell[edge]["cell_id"]) * 2
@@ -459,28 +454,28 @@ if __name__ == "__main__":
     with open(basic_conf, 'rb') as f:
         args = yaml.load(f, Loader=yaml.FullLoader)
     merge_target("four_1", net_information["ordinary_cell"], True)
-    # destiantion = args["destination"][0]
-    # prefix = args["prefix"]
-    # input_cells_name = args["input_cells_name"]
-    # args = {}
-    # args["sim_step"] = 0.1
-    # args["deltaT"] = 5
-    # args["temporal_length"] = 20
-    # args["init_length"] = 4
-    # args["start"] = 0
-    # args["use_cuda"] = True
-    # args["dest_number"] = 6
-    # a = data_on_network(net_information, destiantion, prefix, args)
-    # input_cells = a.name_to_id(input_cells_name)
-    # output_cells = a.name_to_id(destiantion)
-    # is_input = []
-    # for i in range(a.N):
-    #     if i in input_cells:
-    #         is_input.append(-1)
-    #     elif i in output_cells:
-    #         is_input.append(1)
-    #     else:
-    #         is_input.append(0)
-    # inputs, adj_list = a.get_batch()
-    # layout = calculate_layout(net_file, pickle_file, best_distance=50)
-    # a.show_adj(a.all_adj, network_type=layout, colors=is_input, with_label=False, figure_size=(15, 10))
+    destiantion = args["destination"][0]
+    prefix = args["prefix"]
+    input_cells_name = args["input_cells_name"]
+    args = {}
+    args["sim_step"] = 0.1
+    args["deltaT"] = 5
+    args["temporal_length"] = 20
+    args["init_length"] = 4
+    args["start"] = 0
+    args["use_cuda"] = True
+    args["dest_number"] = 6
+    a = data_on_network(net_information, destiantion, prefix, args)
+    input_cells = a.name_to_id(input_cells_name)
+    output_cells = a.name_to_id(destiantion)
+    is_input = []
+    for i in range(a.N):
+        if i in input_cells:
+            is_input.append(-1)
+        elif i in output_cells:
+            is_input.append(1)
+        else:
+            is_input.append(0)
+    inputs, adj_list = a.get_batch()
+    layout = calculate_layout(net_file, pickle_file, best_distance=50)
+    a.show_adj(a.all_adj, network_type=layout, colors=is_input, with_label=False, figure_size=(15, 10))
