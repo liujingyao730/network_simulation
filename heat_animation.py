@@ -6,15 +6,17 @@ import matplotlib.pyplot as plt
 import pickle
 import xml.etree.cElementTree as etree
 from matplotlib.collections import LineCollection
-from matplotlib.colors import ListedColormap, BoundaryNorm
+import cv2
+import os
 
 from pre_process import calculate_layout, net_resolve, enlarge_gap
+from dir_manage import root_path
 
 width = 10
 
 def get_picture_layout(net_file):
     
-    net_information = net_resolve(net_file, pickle_file)
+    net_information = net_resolve(net_file, "default.pkl")
 
     ordinary_cell = net_information["ordinary_cell"]
     cell_list = []
@@ -109,22 +111,46 @@ def single_frame(data, edge_info, cell_info, file="roadheat.png"):
         lc = LineCollection(segments, norm=norm)
         # Set the values used for colormapping
         lc.set_array(color)
-        lc.set_linewidth(5)
+        lc.set_linewidth(4)
         line = axs.add_collection(lc)
     
-    axs.set_xlim(-1000, 1000)
+    axs.set_xlim(-1000, 1100)
     axs.set_ylim(-1000, 1000)
-    fig.colorbar(line, ax=axs)
+    # fig.colorbar(line, ax=axs)
     plt.savefig(file)
-   
+    plt.close()
+
+def generate_video(data, edge_info, cell_info):
     
+    tmp_picture_folder = os.path.join(root_path, "tmp_picture")
+    if not os.path.exists(tmp_picture_folder):
+        os.makedirs(tmp_picture_folder)
+    
+    frame, cell = data.shape
+    
+    for i in range(frame):
+        picture_file = os.path.join(tmp_picture_folder, str(i)+'.png')
+        single_frame(data[i, :], edge_info, cell_info, picture_file)
+    
+    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    video_writer = cv2.VideoWriter("heat_road_map.avi", fourcc, 24, (640, 480), True)
+    
+    for i in range(frame):
+        frame = cv2.imread(os.path.join(tmp_picture_folder, str(i)+'.png'))
+        video_writer.write(frame)
+        os.remove(os.path.join(tmp_picture_folder, str(i)+'.png'))
+    
+    video_writer.release()
+    cv2.destroyAllWindows()
+   
+
 if __name__ == "__main__":
     net_file = "four_large.net.xml"
     pickle_file = "test.pkl"
 
     with open("test.pkl", 'rb') as f:
         net_information = pickle.load(f)
-    layout = calculate_layout(net_file, pickle_file, best_distance=50)
     edge_info, cell_info = get_picture_layout(net_file)
-    data = np.random.rand(110) * 100
-    single_frame(data, edge_info, cell_info)
+    data = np.random.rand(48, 110) * 100
+    # single_frame(data[0, :], edge_info, cell_info)
+    generate_video(data, edge_info, cell_info)
