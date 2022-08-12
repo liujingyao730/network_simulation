@@ -9,7 +9,7 @@ import os
 import yaml
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_squared_error, mean_absolute_error
 import time
 
 from com_model import replaceable_model,dyn_embedding
@@ -20,6 +20,7 @@ from network import data_on_network
 import dir_manage as d
 from utils import sparselist_to_tensor, from_sparse_get_index, from_sparse_get_reverse_index
 from rgb_heatmap import rgb_map
+from heat_animation import generate_video, get_picture_layout
 
 def test_model(args, data_set):
 
@@ -192,13 +193,13 @@ def test_model(args, data_set):
         target_heat = pd.DataFrame(target_heat, index=cells, columns=col)
 
         fig, ax = plt.subplots(figsize=(14, 4))
-        sns.heatmap(output_heat, cmap='YlGnBu', linewidths=.5, ax=ax, xticklabels=10, vmax=70)
+        sns.heatmap(output_heat, cmap='YlGnBu', linewidths=.5, ax=ax, xticklabels=10, vmax=40)
         plt.xlabel("time step", fontsize=20)
         plt.ylabel("nodes", fontsize=20)
         plt.savefig("output_heat.png", bbox_inches="tight")
         plt.cla()
         fig, ax = plt.subplots(figsize=(14, 4))
-        sns.heatmap(target_heat, cmap='YlGnBu', linewidths=.5, ax=ax, xticklabels=10, vmax=70)
+        sns.heatmap(target_heat, cmap='YlGnBu', linewidths=.5, ax=ax, xticklabels=10, vmax=40)
         plt.xlabel("time step", fontsize=20)
         plt.ylabel("nodes", fontsize=20)
         plt.savefig("target_heat.png", bbox_inches="tight")
@@ -223,6 +224,7 @@ def test_model(args, data_set):
     last_error = mean_squared_error(output[0, -1, :], target[0, -1, :])
     print(ave_error)
     print(last_error)
+    # print(mean_absolute_error(output[0, :, :], target[0, :, :]) / np.mean(target[0, :, :]))
 
     get_eva_time = args.get("get_eva_time", False)
     if get_eva_time:
@@ -249,10 +251,13 @@ def test_model(args, data_set):
             real_cell = target[0, start:end, show_cell]
             predict_cell = output[0, start:end, show_cell]
         x = np.array(range(real_cell.shape[0]))
+        
+        # np.save("four4_32.npy", real_cell)
+        # np.save("four4_stgat_32.npy", predict_cell)
 
         plt.figure(figsize=(10,4))
         plt.plot(x, real_cell)
-        # plt.plot(x, predict_cell, label="our model")
+        plt.plot(x, predict_cell, label="our model")
         plt.legend()
         plt.xlabel("time step")
         plt.ylabel("vehicle number")
@@ -271,6 +276,13 @@ def test_model(args, data_set):
         targetf = args["target_output_file"]
         np.save(outputf, output[0, :, 32])
         np.save(targetf, target[0, :, 32])
+    
+    if args.get("is_heat_animation", False):
+        net_xml_file = args.get("net_xml_file", "four_large.net.xml")
+        edge_info, cell_info = get_picture_layout(net_xml_file)
+        start = args.get("ani_start", 0)
+        end = args.get("ani_end", 400)
+        generate_video(target[0, start:end, :], output[0, start:end, :], edge_info, cell_info, output_title=args.get("model_name", "SimNET"))
 
     return ave_error
 
